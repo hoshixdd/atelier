@@ -46,8 +46,11 @@ export function Nav() {
   }
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-nav mix-blend-difference">
-      <div className="pointer-events-auto flex items-center justify-between px-5 py-4 text-bone sm:px-8 sm:py-5">
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-nav md:mix-blend-difference">
+      <div
+        className="pointer-events-auto flex items-center justify-between px-4 py-3 text-bone sm:px-8 sm:py-5 max-md:bg-void/55 max-md:backdrop-blur-md"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
         <Link
           to="/"
           data-magnetic
@@ -77,17 +80,19 @@ export function Nav() {
           })}
         </nav>
         <div className="flex items-center gap-3 text-xs tracking-widest uppercase sm:gap-5">
-          <ManilaClock />
+          <span className="hidden sm:inline">
+            <ManilaClock />
+          </span>
           <button
             type="button"
             onClick={() => useAtelier.getState().setPaletteOpen(true)}
             disabled={!entered}
             data-magnetic
-            className="min-h-11 text-mute hover:text-bone disabled:opacity-40"
+            className="hidden min-h-11 text-mute hover:text-bone disabled:opacity-40 sm:inline"
             aria-label="Open command palette"
           >
-            <span className="hidden sm:inline">⌘K</span>
-            <span className="sm:hidden">Go</span>
+            <span className="hidden md:inline">⌘K</span>
+            <span className="md:hidden">Go</span>
           </button>
           <button
             type="button"
@@ -107,7 +112,8 @@ export function Nav() {
             aria-pressed={soundOn}
             aria-label={soundOn ? "Mute sound" : "Enable sound"}
           >
-            Sound {soundOn ? "on" : "off"}
+            <span className="md:hidden">{soundOn ? "Sound" : "Quiet"}</span>
+            <span className="hidden md:inline">Sound {soundOn ? "on" : "off"}</span>
           </button>
         </div>
       </div>

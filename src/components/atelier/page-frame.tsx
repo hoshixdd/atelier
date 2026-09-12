@@ -9,7 +9,7 @@ export function PageFrame({
   className?: string;
 }) {
   return (
-    <main className={cn("page-shot relative px-5 pb-28 pt-28 sm:px-10 lg:px-16", className)}>
+    <main className={cn("page-shot relative px-5 pb-32 pt-24 sm:px-10 sm:pb-28 sm:pt-28 lg:px-16", className)}>
       {children}
     </main>
   );

@@ -70,7 +70,7 @@ export function Loader() {
   if (entered) return null;
 
   return (
-    <div className="fixed inset-0 z-loader flex flex-col items-center justify-center bg-void px-5 text-bone">
+    <div className="fixed inset-0 z-loader flex flex-col items-center justify-center bg-void px-5 text-bone" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="scanline opacity-60" />
       <div
         className="mb-10 transition-all duration-700"

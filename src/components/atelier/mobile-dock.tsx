@@ -7,8 +7,8 @@ export function MobileDock() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-nav border-t border-line bg-void/92 px-2 pt-2 backdrop-blur-md md:hidden"
-      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+      className="fixed inset-x-0 bottom-0 z-nav border-t border-line bg-void/90 px-1 pt-1 backdrop-blur-md md:hidden"
+      style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))" }}
     >
       <ul className="grid grid-cols-4">
         {NAV.map((item) => {
@@ -20,10 +20,10 @@ export function MobileDock() {
                 to={item.href}
                 onClick={() => sound.click()}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 flex-col items-center justify-center gap-1 text-xs tracking-widest uppercase active:scale-[0.96] ${active ? "text-bone" : "text-mute"}`}
+                className={`flex min-h-12 flex-col items-center justify-center gap-1 text-[10px] tracking-[0.22em] uppercase active:scale-[0.96] ${active ? "text-bone" : "text-mute"}`}
               >
                 <span
-                  className={`h-px w-4 ${active ? "bg-bone" : "bg-transparent"}`}
+                  className={`h-px w-5 ${active ? "bg-bone" : "bg-transparent"}`}
                   aria-hidden="true"
                 />
                 {item.label}

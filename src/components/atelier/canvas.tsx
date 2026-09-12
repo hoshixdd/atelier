@@ -690,12 +690,13 @@ export function AtelierCanvas() {
           lz = 0;
         } else {
           const ang = sc * Math.PI * 1.2;
-          wantFov = 42 - sc * 6;
+          const portrait = camera.aspect > 0 && camera.aspect < 0.86;
+          wantFov = (portrait ? 54 : 42) - sc * 6;
           tx = Math.sin(ang) * (0.9 + sc * 2.1) + pointer.x * 0.4 * motion;
-          ty = Math.sin(ang * 0.5) * 0.45 - pointer.y * 0.22 * motion;
-          tz = tz - sc * 1.85;
+          ty = Math.sin(ang * 0.5) * 0.45 - pointer.y * 0.22 * motion + (portrait ? 0.22 : 0);
+          tz = tz - sc * 1.85 + (portrait ? 1.35 : 0);
           lx = Math.sin(ang) * 0.35;
-          ly = 0;
+          ly = portrait ? -0.15 : 0;
           lz = 0;
         }
 

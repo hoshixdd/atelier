@@ -37,7 +37,7 @@ function Timecode() {
     return () => window.clearInterval(id);
   }, [entered]);
   return (
-    <p className="pointer-events-none fixed bottom-14 left-1/2 z-[11] -translate-x-1/2 font-mono text-[9px] tracking-[0.35em] text-bone/55 md:bottom-1">
+    <p className="pointer-events-none fixed bottom-14 left-1/2 z-[11] hidden -translate-x-1/2 font-mono text-[9px] tracking-[0.35em] text-bone/55 md:bottom-1 md:block">
       HOSHIIXDD · {t}
     </p>
   );

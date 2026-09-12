@@ -246,6 +246,18 @@ input[type="range"] {
 .letterbox.film { height: 2.6vh; }
 .letterbox.deep { height: 8vh; }
 
+@media (max-width: 767px) {
+  .letterbox.film { height: 0.8vh; }
+  .letterbox.deep { height: 4.5vh; }
+  .letterbox.bot.film { height: 0; }
+  .hud-corner {
+    width: 12px;
+    height: 12px;
+  }
+  .hud-corner.tl { top: max(8px, env(safe-area-inset-top)); left: 8px; }
+  .hud-corner.tr { top: max(8px, env(safe-area-inset-top)); right: 8px; }
+}
+
 .slugline {
   pointer-events: none;
   position: fixed;
