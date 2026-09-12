@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { WORKS } from "@/lib/works";
 import { dayPart } from "@/lib/ceb";
 import { fillBox, fillShell, fillSpiral, points, starSprite } from "@/lib/cosmos";
+import { bindCapture } from "@/lib/capture";
 import { flyToRoom } from "@/lib/director";
 import { sound } from "@/lib/sound";
 import { useAtelier, type SceneMode, type SkyLabel } from "@/store/atelier";
@@ -147,7 +148,37 @@ export function AtelierCanvas() {
       }),
     );
     core.scale.set(0.55, 0.55, 1);
-    nova.add(halo, remnant, core);
+    const lensMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform float uTime;
+        void main() {
+          vec2 p = vUv * 2.0 - 1.0;
+          float r = length(p);
+          float ring = smoothstep(0.055, 0.0, abs(r - 0.73)) * (0.82 + 0.18 * sin(uTime * 0.65));
+          float inner = smoothstep(0.09, 0.0, abs(r - 0.56)) * 0.4;
+          float glow = exp(-r * 2.35) * 0.2;
+          vec3 col = vec3(0.7, 0.86, 1.0) * ring
+                   + vec3(1.0, 0.76, 0.5) * inner
+                   + vec3(0.92, 0.94, 1.0) * glow;
+          float a = ring * 0.92 + inner * 0.45 + glow;
+          gl_FragColor = vec4(col, a);
+        }
+      `,
+    });
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(1.9, 72), lensMat);
+    nova.add(halo, remnant, core, lens);
     scene.add(nova);
 
     loader.load("/cosmos/remnant.png", (tex) => {
@@ -447,6 +478,51 @@ export function AtelierCanvas() {
       return m;
     });
 
+    const wordGroup = new THREE.Group();
+    scene.add(wordGroup);
+    let wordSig = "";
+    const wordTex: THREE.CanvasTexture[] = [];
+    function syncWords(list: { word: string; a: number }[]) {
+      const sig = list.map((w) => w.word).join("|");
+      if (sig === wordSig) return;
+      wordSig = sig;
+      while (wordGroup.children.length) {
+        const child = wordGroup.children[0]!;
+        wordGroup.remove(child);
+      }
+      wordTex.forEach((t) => t.dispose());
+      wordTex.length = 0;
+      list.forEach((w, i) => {
+        const c = document.createElement("canvas");
+        c.width = 256;
+        c.height = 64;
+        const ctx = c.getContext("2d");
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 256, 64);
+        ctx.fillStyle = "rgba(237,234,227,0.9)";
+        ctx.font = "500 28px Manrope, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(w.word, 128, 32);
+        const tex = new THREE.CanvasTexture(c);
+        wordTex.push(tex);
+        const spr = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            depthWrite: false,
+            opacity: 0.72,
+          }),
+        );
+        spr.scale.set(0.9, 0.22, 1);
+        spr.userData.a = w.a;
+        spr.userData.i = i;
+        wordGroup.add(spr);
+      });
+    }
+
+    let lastStrike = 0;
+
     let composer: EffectComposer | null = null;
     let bloomPass: UnrealBloomPass | null = null;
     if (useBloom) {
@@ -598,6 +674,7 @@ export function AtelierCanvas() {
     window.addEventListener("wheel", onWheel, { passive: true });
     const onLost = (e: Event) => e.preventDefault();
     canvas.addEventListener("webglcontextlost", onLost);
+    bindCapture(() => renderer.domElement);
 
     const resize = () => {
       const w = wrap.clientWidth;
@@ -623,6 +700,18 @@ export function AtelierCanvas() {
       const playing = state.sceneMode === "play";
       pulse *= 0.955;
       frameN += 1;
+      if (state.strikeN !== lastStrike) {
+        pulse = Math.max(pulse, 0.72);
+        lastStrike = state.strikeN;
+      }
+      lensMat.uniforms.uTime.value = t;
+
+      const ambT = part === "night" ? 0.04 : part === "morning" ? 0.09 : part === "dusk" ? 0.07 : 0.085;
+      const keyT = part === "night" ? 0.95 : part === "morning" ? 1.55 : part === "dusk" ? 1.35 : 1.7;
+      ambient.intensity += (ambT - ambient.intensity) * 0.04;
+      key.intensity += (keyT - key.intensity) * 0.04;
+      key.color.setHex(part === "night" ? 0x8aa6cc : part === "morning" ? 0xffd4a8 : part === "dusk" ? 0xffb078 : 0xffe8c8);
+      sun.color.setHex(part === "night" ? 0xc8d8ff : part === "dusk" ? 0xffc090 : 0xfff1d0);
 
       if (state.entered && introT0 === 0) introT0 = performance.now();
       const introK = !state.entered
@@ -692,8 +781,8 @@ export function AtelierCanvas() {
           const ang = sc * Math.PI * 1.2;
           const portrait = camera.aspect > 0 && camera.aspect < 0.86;
           wantFov = (portrait ? 54 : 42) - sc * 6;
-          tx = Math.sin(ang) * (0.9 + sc * 2.1) + pointer.x * 0.4 * motion;
-          ty = Math.sin(ang * 0.5) * 0.45 - pointer.y * 0.22 * motion + (portrait ? 0.22 : 0);
+          tx = Math.sin(ang) * (0.9 + sc * 2.1) + pointer.x * 0.4 * motion + state.tiltX * 0.85 * motion;
+          ty = Math.sin(ang * 0.5) * 0.45 - pointer.y * 0.22 * motion + (portrait ? 0.22 : 0) + state.tiltY * 0.55 * motion;
           tz = tz - sc * 1.85 + (portrait ? 1.35 : 0);
           lx = Math.sin(ang) * 0.35;
           ly = portrait ? -0.15 : 0;
@@ -872,6 +961,14 @@ export function AtelierCanvas() {
         state.setLabels(next);
       }
 
+      if (frameN % 20 === 0) syncWords(state.skyWords);
+      if (state.directorOn && frameN % 3 === 0) state.setCam(camera.position.z, camera.fov);
+      wordGroup.children.forEach((spr) => {
+        const a = (spr.userData.a as number) + t * 0.07;
+        const r = 2.55 + (spr.userData.i as number) * 0.05;
+        spr.position.set(Math.cos(a) * r, Math.sin(a * 0.6) * 0.35, Math.sin(a) * r * 0.42);
+      });
+
       if (composer) composer.render();
       else renderer.render(scene, camera);
       raf = requestAnimationFrame(tick);
@@ -886,6 +983,10 @@ export function AtelierCanvas() {
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("webglcontextlost", onLost);
+      bindCapture(null);
+      lensMat.dispose();
+      lens.geometry.dispose();
+      wordTex.forEach((tex) => tex.dispose());
       ro.disconnect();
       composer?.dispose();
       starTex.dispose();

@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { captureStill } from "@/lib/capture";
 import { NAV, SITE } from "@/lib/site";
 import { sound } from "@/lib/sound";
 import { useAtelier } from "@/store/atelier";
@@ -114,6 +115,22 @@ export function Nav() {
           >
             <span className="md:hidden">{soundOn ? "Sound" : "Quiet"}</span>
             <span className="hidden md:inline">Sound {soundOn ? "on" : "off"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void (async () => {
+                const ok = await captureStill();
+                useAtelier.getState().setNotice(ok ? "Still saved" : "No frame");
+                window.setTimeout(() => useAtelier.getState().setNotice(null), 1600);
+              })();
+            }}
+            disabled={!entered}
+            data-magnetic
+            className="min-h-11 text-mute hover:text-bone disabled:opacity-40"
+            aria-label="Capture a still"
+          >
+            Still
           </button>
         </div>
       </div>

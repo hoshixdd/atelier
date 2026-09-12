@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { SITE } from "@/lib/site";
+import { enableGyro } from "@/lib/gyro";
 import { sound } from "@/lib/sound";
 import { useAtelier } from "@/store/atelier";
 import { StarMark } from "./star-mark";
@@ -46,6 +47,14 @@ export function Loader() {
       sound.setEnabled(true);
       setSoundOn(true);
       sound.enter();
+    }
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      void enableGyro().then((ok) => {
+        if (ok) {
+          useAtelier.getState().setNotice("Tilt to look");
+          window.setTimeout(() => useAtelier.getState().setNotice(null), 2200);
+        }
+      });
     }
     setEntered(true);
     try {

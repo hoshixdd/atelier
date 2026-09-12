@@ -25,7 +25,9 @@ function Home() {
         ) : (
           <p className="kicker mb-2 max-md:text-center">
             <span className="md:hidden">Tap a named world</span>
-            <span className="hidden md:inline">Touch a named world · unnamed worlds keep letters</span>
+            <span className="hidden md:inline">
+              Touch a named world · unnamed worlds keep letters · 1–8 play · hold D · S still · L a word
+            </span>
           </p>
         )}
       </section>

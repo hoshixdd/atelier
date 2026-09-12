@@ -309,6 +309,20 @@ input[type="range"] {
   }
 }
 
+.credits-mask {
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+}
+.credits-crawl {
+  animation: credits-up 42s linear infinite;
+}
+@keyframes credits-up {
+  from { transform: translateY(55%); }
+  to { transform: translateY(-70%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .credits-crawl { animation: none; transform: none; }
+}
+
 .glitch {
   animation: glitch-flick 7s steps(1, end) infinite;
 }

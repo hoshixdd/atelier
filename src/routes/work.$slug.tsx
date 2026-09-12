@@ -3,6 +3,7 @@ import { flyToRoom } from "@/lib/director";
 import { getWork, neighbors } from "@/lib/works";
 import { sound } from "@/lib/sound";
 import { PageFrame } from "@/components/atelier/page-frame";
+import { LivePortal } from "@/components/atelier/live-portal";
 import { Reveal } from "@/components/atelier/reveal";
 import { SwipeRoom } from "@/components/atelier/swipe-room";
 import { useSceneMode } from "@/components/atelier/use-scene-mode";
@@ -40,37 +41,7 @@ function WorkRoom() {
         </div>
       </Reveal>
 
-      {work.live ? (
-        <Reveal className="mt-6">
-          <p className="kicker">Live surface</p>
-          <div className="mt-4 overflow-hidden border border-line bg-fog">
-            <div className="flex items-center justify-between border-b border-line px-4 py-2">
-              <span className="text-[10px] tracking-widest text-mute uppercase">
-                {work.live.replace(/^https?:\/\//, "")}
-              </span>
-              <a
-                href={work.live}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => sound.click()}
-                className="text-[10px] tracking-widest uppercase hover:text-bone"
-              >
-                Open
-              </a>
-            </div>
-            <iframe
-              src={work.live}
-              title={`Live ${work.title}`}
-              className="aspect-16/9 w-full bg-void"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          <p className="mt-3 text-xs text-mute">
-            If the surface is quiet, the host refused the frame. Open live.
-          </p>
-        </Reveal>
-      ) : null}
+      <LivePortal work={work} />
 
       <div className="mt-16 grid gap-12 lg:grid-cols-12">
         <div className="lg:col-span-7">

@@ -18,6 +18,7 @@ import { Route as LabRouteImport } from './routes/lab'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as PlayRouteImport } from './routes/play'
 import { Route as WorkRouteImport } from './routes/work'
+import { Route as ApiLettersRouteImport } from './routes/api/letters'
 import { Route as ApiRtcRouteImport } from './routes/api/rtc'
 import { Route as WorkIndexRouteImport } from './routes/work.index'
 import { Route as WorkSlugRouteImport } from './routes/work.$slug'
@@ -67,6 +68,11 @@ const WorkRoute = WorkRouteImport.update({
   path: '/work',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLettersRoute = ApiLettersRouteImport.update({
+  id: '/api/letters',
+  path: '/api/letters',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRtcRoute = ApiRtcRouteImport.update({
   id: '/api/rtc',
   path: '/api/rtc',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof NotesRoute
   '/play': typeof PlayRoute
   '/work': typeof WorkRouteWithChildren
+  '/api/letters': typeof ApiLettersRoute
   '/api/rtc': typeof ApiRtcRoute
   '/work/$slug': typeof WorkSlugRoute
   '/work/': typeof WorkIndexRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/lab': typeof LabRoute
   '/notes': typeof NotesRoute
   '/play': typeof PlayRoute
+  '/api/letters': typeof ApiLettersRoute
   '/api/rtc': typeof ApiRtcRoute
   '/work/$slug': typeof WorkSlugRoute
   '/work': typeof WorkIndexRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/notes': typeof NotesRoute
   '/play': typeof PlayRoute
   '/work': typeof WorkRouteWithChildren
+  '/api/letters': typeof ApiLettersRoute
   '/api/rtc': typeof ApiRtcRoute
   '/work/$slug': typeof WorkSlugRoute
   '/work/': typeof WorkIndexRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/play'
     | '/work'
+    | '/api/letters'
     | '/api/rtc'
     | '/work/$slug'
     | '/work/'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/lab'
     | '/notes'
     | '/play'
+    | '/api/letters'
     | '/api/rtc'
     | '/work/$slug'
     | '/work'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/play'
     | '/work'
+    | '/api/letters'
     | '/api/rtc'
     | '/work/$slug'
     | '/work/'
@@ -179,6 +191,7 @@ export interface RootRouteChildren {
   NotesRoute: typeof NotesRoute
   PlayRoute: typeof PlayRoute
   WorkRoute: typeof WorkRouteWithChildren
+  ApiLettersRoute: typeof ApiLettersRoute
   ApiRtcRoute: typeof ApiRtcRoute
 }
 
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/letters': {
+      id: '/api/letters'
+      path: '/api/letters'
+      fullPath: '/api/letters'
+      preLoaderRoute: typeof ApiLettersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/rtc': {
       id: '/api/rtc'
       path: '/api/rtc'
@@ -293,6 +313,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotesRoute: NotesRoute,
   PlayRoute: PlayRoute,
   WorkRoute: WorkRouteWithChildren,
+  ApiLettersRoute: ApiLettersRoute,
   ApiRtcRoute: ApiRtcRoute,
 }
 export const routeTree = rootRouteImport

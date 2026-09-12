@@ -20,8 +20,8 @@ function Lab() {
         {entered ? <SplitTitle text="Lab" /> : "Lab"}
       </h1>
       <p className="mt-6 max-w-lg text-sm leading-relaxed text-mute">
-        Toys for the hand. Sound, if you armed it at the door, follows. Harvest novas
-        to open the fourth.
+        Toys for the hand. Sound, if you armed it at the door, follows. Keys 1–8 play
+        the remnant from anywhere. Harvest novas to open the fourth.
       </p>
       <div className="mt-16 grid gap-8 lg:grid-cols-2">
         <Constellation />

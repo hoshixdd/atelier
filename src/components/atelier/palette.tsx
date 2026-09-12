@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { captureStill } from "@/lib/capture";
+import { enableGyro } from "@/lib/gyro";
 import { SITE } from "@/lib/site";
 import { WORKS } from "@/lib/works";
 import { flyToRoom } from "@/lib/director";
@@ -76,6 +78,44 @@ export function Palette() {
             setSoundOn(next);
             if (next) sound.click();
             setPaletteOpen(false);
+          })();
+        },
+      },
+      {
+        id: "still",
+        label: "Capture a still",
+        hint: "S",
+        keywords: "still poster capture screenshot frame",
+        run: () => {
+          setPaletteOpen(false);
+          void (async () => {
+            const ok = await captureStill();
+            setNotice(ok ? "Still saved" : "No frame");
+            window.setTimeout(() => useAtelier.getState().setNotice(null), 1600);
+          })();
+        },
+      },
+      {
+        id: "word",
+        label: "Leave a word",
+        hint: "L",
+        keywords: "letter word sky satellite leave",
+        run: () => {
+          setPaletteOpen(false);
+          useAtelier.getState().setLeaveOpen(true);
+        },
+      },
+      {
+        id: "gyro",
+        label: "Tilt the sky",
+        hint: "Phone",
+        keywords: "gyro tilt look phone",
+        run: () => {
+          void (async () => {
+            const ok = await enableGyro();
+            setNotice(ok ? "Tilt to look" : "No tilt on this machine");
+            setPaletteOpen(false);
+            window.setTimeout(() => useAtelier.getState().setNotice(null), 1800);
           })();
         },
       },

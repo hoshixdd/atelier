@@ -23,6 +23,8 @@ class SoundEngine {
   private enabled = false;
   private unlocked = false;
   private drone = 0.55;
+  private oscC: OscillatorNode | null = null;
+  private arpTimer = 0;
 
   private ensure() {
     if (this.ctx) return;
@@ -67,25 +69,34 @@ class SoundEngine {
 
   setScene(mode: string) {
     if (!this.oscA || !this.oscB || !this.ctx) return;
-    const map: Record<string, [number, number]> = {
-      home: [110, 164.81],
-      work: [98, 146.83],
-      room: [130.81, 196],
-      "assess-pilot": [146.83, 220],
-      "a-little-infinity": [87.31, 174.61],
-      "common-table": [98, 147],
-      lab: [82.41, 123.47],
-      about: [98, 196],
-      colophon: [87.31, 174.61],
-      contact: [146.83, 220],
-      notes: [123.47, 184.99],
-      play: [55, 82.41],
-      lost: [73.42, 110],
+    const map: Record<string, [number, number, number]> = {
+      home: [110, 164.81, 55],
+      work: [98, 146.83, 49],
+      room: [130.81, 196, 65.41],
+      "assess-pilot": [146.83, 220, 73.42],
+      "a-little-infinity": [87.31, 174.61, 43.65],
+      "common-table": [98, 147, 49],
+      lab: [82.41, 123.47, 41.2],
+      about: [98, 196, 49],
+      colophon: [87.31, 130.81, 43.65],
+      contact: [146.83, 220, 73.42],
+      notes: [123.47, 184.99, 61.74],
+      play: [55, 82.41, 36.71],
+      lost: [73.42, 110, 36.71],
     };
     const pair = map[mode] ?? map.home;
     const t = now(this.ctx);
     this.oscA.frequency.setTargetAtTime(pair[0], t, 0.45);
     this.oscB.frequency.setTargetAtTime(pair[1], t, 0.45);
+    this.oscC?.frequency.setTargetAtTime(pair[2], t, 0.45);
+    if (this.ambientGain && this.enabled) {
+      const quiet = mode === "about" || mode === "notes" ? 0.18 : mode === "colophon" ? 0.4 : 1;
+      this.ambientGain.gain.setTargetAtTime(this.level() * quiet, t, 0.7);
+    }
+    if (this.filter) {
+      const open = mode === "play" ? 720 : mode === "about" ? 220 : 420;
+      this.filter.frequency.setTargetAtTime(open, t, 0.5);
+    }
   }
 
   private startAmbient() {
@@ -111,6 +122,7 @@ class SoundEngine {
 
     this.oscA = makeOsc(110, "sine");
     this.oscB = makeOsc(164.81, "sine");
+    this.oscC = makeOsc(55, "sine");
 
     const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const data = noiseBuffer.getChannelData(0);
@@ -134,6 +146,14 @@ class SoundEngine {
     lfo.connect(lfoGain);
     lfoGain.connect(this.filter.frequency);
     lfo.start();
+
+    const arp = () => {
+      if (!this.enabled || !this.unlocked || !this.ctx) return;
+      const seq = [110, 138.59, 164.81, 146.83];
+      const f = seq[Math.floor(Date.now() / 3200) % seq.length]!;
+      this.blip(f * 2, 0.012, 0.9, "sine");
+    };
+    this.arpTimer = window.setInterval(arp, 3200);
   }
 
   private blip(freq: number, peak: number, dur: number, type: OscKind = "sine") {
@@ -232,8 +252,9 @@ class SoundEngine {
   }
 
   tone(freq: number) {
-    this.blip(freq, 0.06, 0.45, "sine");
-    this.blip(freq * 1.5, 0.025, 0.28, "triangle");
+    this.blip(freq, 0.07, 0.55, "sine");
+    this.blip(freq * 2, 0.02, 0.32, "triangle");
+    this.blip(freq * 0.5, 0.03, 0.7, "sine");
   }
 
   letter() {

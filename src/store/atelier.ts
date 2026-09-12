@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { SkyWord } from "@/lib/letters";
 
 export type SceneMode =
   | "home"
@@ -52,6 +53,16 @@ type AtelierState = {
   fly: { src: string; x: number; y: number; w: number; h: number } | null;
   letterboxOn: boolean;
   slugline: string | null;
+  directorOn: boolean;
+  tiltX: number;
+  tiltY: number;
+  gyroOn: boolean;
+  camZ: number;
+  camFov: number;
+  take: number;
+  leaveOpen: boolean;
+  skyWords: SkyWord[];
+  strikeN: number;
   setEntered: (v: boolean) => void;
   setIntroPlaying: (v: boolean) => void;
   setSoundOn: (v: boolean) => void;
@@ -80,6 +91,14 @@ type AtelierState = {
   setFly: (f: { src: string; x: number; y: number; w: number; h: number } | null) => void;
   setLetterboxOn: (v: boolean) => void;
   setSlugline: (s: string | null) => void;
+  setDirectorOn: (v: boolean) => void;
+  setTilt: (x: number, y: number) => void;
+  setGyroOn: (v: boolean) => void;
+  setCam: (z: number, fov: number) => void;
+  bumpTake: () => void;
+  setLeaveOpen: (v: boolean) => void;
+  setSkyWords: (w: SkyWord[]) => void;
+  strike: () => void;
 };
 
 export const useAtelier = create<AtelierState>((set) => ({
@@ -112,6 +131,16 @@ export const useAtelier = create<AtelierState>((set) => ({
   fly: null,
   letterboxOn: false,
   slugline: null,
+  directorOn: false,
+  tiltX: 0,
+  tiltY: 0,
+  gyroOn: false,
+  camZ: 7.8,
+  camFov: 42,
+  take: 1,
+  leaveOpen: false,
+  skyWords: [],
+  strikeN: 0,
   setEntered: (entered) => set({ entered }),
   setIntroPlaying: (introPlaying) => set({ introPlaying }),
   setSoundOn: (soundOn) => set({ soundOn }),
@@ -157,6 +186,14 @@ export const useAtelier = create<AtelierState>((set) => ({
   setFly: (fly) => set({ fly }),
   setLetterboxOn: (letterboxOn) => set({ letterboxOn }),
   setSlugline: (slugline) => set({ slugline }),
+  setDirectorOn: (directorOn) => set({ directorOn }),
+  setTilt: (tiltX, tiltY) => set({ tiltX, tiltY }),
+  setGyroOn: (gyroOn) => set({ gyroOn }),
+  setCam: (camZ, camFov) => set({ camZ, camFov }),
+  bumpTake: () => set((s) => ({ take: s.take + 1 })),
+  setLeaveOpen: (leaveOpen) => set({ leaveOpen }),
+  setSkyWords: (skyWords) => set({ skyWords }),
+  strike: () => set((s) => ({ strikeN: s.strikeN + 1 })),
 }));
 
 const DESK_KEY = "hoshii-desk";

@@ -7,14 +7,25 @@ import { useAtelier } from "@/store/atelier";
 
 export const Route = createFileRoute("/colophon")({ component: Colophon });
 
+function extraLine() {
+  if (typeof navigator === "undefined") return "GUEST — UNKNOWN";
+  const ua = navigator.userAgent;
+  const chrome = /Chrome\/(\d+)/.exec(ua);
+  const safari = /Version\/(\d+).+Safari/.exec(ua);
+  const engine = chrome ? `CHROME ${chrome[1]}` : safari ? `SAFARI ${safari[1]}` : "BROWSER";
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "LOCAL";
+  return `GUEST — ${engine}, ${tz.replace(/_/g, " ").toUpperCase()}`;
+}
+
 function Colophon() {
   useSceneMode("colophon");
   const entered = useAtelier((s) => s.entered);
   const novas = useAtelier((s) => s.novas);
+  const extra = extraLine();
 
   return (
     <PageFrame>
-      <p className="kicker">Making</p>
+      <p className="kicker">End credits</p>
       <h1 className="mt-6 font-display text-6xl sm:text-8xl">
         {entered ? <SplitTitle text="Colophon" /> : "Colophon"}
       </h1>
@@ -22,20 +33,36 @@ function Colophon() {
         How the atelier is built. Type, sound, light, and the rooms they hold.
       </p>
 
+      <div className="credits-mask relative mt-16 h-[70vh] overflow-hidden border border-line">
+        <div className="credits-crawl px-6 py-16 text-center">
+          <p className="kicker">A film by</p>
+          <p className="mt-3 font-display text-4xl">{SITE.person}</p>
+          <p className="mt-16 kicker">Wordmark</p>
+          <p className="mt-2 text-sm">{SITE.name} — from hoshi, star. Handle @{SITE.handle}.</p>
+          <p className="mt-10 kicker">Type</p>
+          <p className="mt-2 text-sm">Instrument Serif · Manrope</p>
+          <p className="mt-10 kicker">World</p>
+          <p className="mt-2 text-sm">Three.js · supernova remnant · named worlds · unnamed letters</p>
+          <p className="mt-10 kicker">Score</p>
+          <p className="mt-2 text-sm">Web Audio. A drone that retunes per planet. Keys 1–8 play the remnant.</p>
+          <p className="mt-10 kicker">Time</p>
+          <p className="mt-2 text-sm">Asia/Manila. The sky is {SITE.location}.</p>
+          <p className="mt-10 kicker">Harvest</p>
+          <p className="mt-2 text-sm">
+            {novas > 0 ? `${novas} nova${novas === 1 ? "" : "s"} on this machine.` : "None yet."}
+          </p>
+          <p className="mt-10 kicker">Stack</p>
+          <p className="mt-2 text-sm">{SITE.stack.join(" · ")}</p>
+          <p className="mt-16 kicker">Extra</p>
+          <p className="mt-3 font-display text-2xl">{extra}</p>
+          <p className="mt-20 font-display text-5xl">{SITE.name}</p>
+          <p className="mt-4 text-xs tracking-[0.35em] uppercase text-mute">The belt continues</p>
+        </div>
+      </div>
+
       <dl className="mt-16 max-w-2xl divide-y divide-line border-y border-line text-sm">
-        <Row k="Wordmark" v={`${SITE.name} — from hoshi, star. Handle @${SITE.handle}.`} />
-        <Row k="Type" v="Instrument Serif for display. Manrope for the body and HUD." />
         <Row k="Palette" v="Void #0A0A0A · Fog #161614 · Line #2C2C28 · Mute #8A8A84 · Bone #EDEAE3" />
-        <Row k="World" v="A persistent Three.js cosmos. A supernova remnant as the star. Named worlds for the work, unnamed planets that keep letters, moons, a belt. Night sides are real. Bloom on the remnant." />
-        <Row k="Sound" v="Web Audio. A drone that retunes per planet. Warps duck the score. Mute is a first-class door." />
-        <Row k="Motion" v="Lenis scroll. A title pull-back from inside the remnant. Interruptible landings. Reduced motion is Quiet on the desk." />
-        <Row k="Time" v={`Asia/Manila. The room shifts with Cebu — ${SITE.location}.`} />
-        <Row k="Presence" v="Other visitors appear as dim stars. No names. No store of who was here." />
-        <Row k="Harvest" v={novas > 0 ? `${novas} nova${novas === 1 ? "" : "s"} remembered on this machine. The remnant keeps the count.` : "None yet. Play is a session around the core."} />
-        {novas >= 2 ? (
-          <Row k="Unlocked" v="You have walked the belt. The unnamed worlds will speak; the fourth instrument waits at three." />
-        ) : null}
-        <Row k="Stack" v={SITE.stack.join(" · ")} />
+        <Row k="Motion" v="Lenis. A title pull-back. Gyro look on the phone. Reduced motion is Quiet." />
         <Row k="Year" v={String(new Date().getFullYear())} />
       </dl>
 
