@@ -47,10 +47,13 @@ export function Nav() {
   }
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-nav md:mix-blend-difference">
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-nav">
       <div
-        className="pointer-events-auto flex items-center justify-between px-4 py-3 text-bone sm:px-8 sm:py-5 max-md:bg-void/55 max-md:backdrop-blur-md"
-        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        className="pointer-events-auto flex items-center justify-between px-4 py-3 text-bone sm:px-8 sm:py-5 max-md:bg-void/70 max-md:backdrop-blur-md"
+        style={{
+          paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+          textShadow: "0 1px 2px rgba(0,0,0,0.95), 0 0 18px rgba(0,0,0,0.8)",
+        }}
       >
         <Link
           to="/"
@@ -73,7 +76,7 @@ export function Nav() {
                 onMouseEnter={() => sound.hover()}
                 onClick={() => sound.click()}
                 aria-current={active ? "page" : undefined}
-                className={`min-h-11 text-xs tracking-widest uppercase ${active ? "text-bone" : "text-mute hover:text-bone"}`}
+                className={`min-h-11 text-xs tracking-widest uppercase ${active ? "text-bone" : "text-mute/90 hover:text-bone"}`}
               >
                 {item.label}
               </Link>

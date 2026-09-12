@@ -16,7 +16,8 @@ export function DirectorHud() {
   const p = (n: number, d = 2) => n.toFixed(d);
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[70] font-mono text-[10px] tracking-[0.18em] text-bone/80 mix-blend-difference"
+      className="pointer-events-none fixed inset-0 z-[70] font-mono text-[10px] tracking-[0.18em] text-bone"
+      style={{ textShadow: "0 1px 2px #000, 0 0 12px #000" }}
       aria-hidden="true"
     >
       <p className="absolute top-[max(4.5rem,calc(env(safe-area-inset-top)+3.2rem))] left-5">

@@ -37,7 +37,8 @@ export function WorldLabels() {
           >
             <span className="size-20 rounded-full md:size-24" />
             <span
-              className={`mt-1 max-w-[9rem] text-center text-[9px] tracking-[0.22em] uppercase md:hidden ${on ? "text-bone" : "text-mute"}`}
+              className={`mt-1 max-w-[9rem] text-center text-[10px] font-medium tracking-[0.18em] uppercase md:hidden ${on ? "text-bone" : "text-bone/85"}`}
+              style={{ textShadow: "0 1px 2px #000, 0 0 12px #000" }}
             >
               {l.index} · {l.title}
             </span>

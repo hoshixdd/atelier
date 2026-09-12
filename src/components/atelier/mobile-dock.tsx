@@ -7,7 +7,7 @@ export function MobileDock() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-nav border-t border-line bg-void/90 px-1 pt-1 backdrop-blur-md md:hidden"
+      className="fixed inset-x-0 bottom-0 z-nav border-t border-line bg-void/95 px-1 pt-1 backdrop-blur-md md:hidden"
       style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))" }}
     >
       <ul className="grid grid-cols-4">

@@ -15,7 +15,7 @@ export function PlanetCard() {
   return (
     <aside
       data-letter
-      className="pointer-events-auto fixed inset-x-3 z-20 overflow-hidden border border-line bg-void/88 backdrop-blur-md max-md:bottom-[calc(4.75rem+env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-10 md:left-1/2 md:w-[min(36rem,calc(100vw-3rem))] md:-translate-x-1/2"
+      className="pointer-events-auto fixed inset-x-3 z-20 overflow-hidden border border-line bg-void/94 backdrop-blur-md max-md:bottom-[calc(4.75rem+env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-10 md:left-1/2 md:w-[min(36rem,calc(100vw-3rem))] md:-translate-x-1/2"
     >
       <button
         type="button"
@@ -31,8 +31,8 @@ export function PlanetCard() {
             {work.index} · {work.year} · {work.short}
           </p>
           <h2 className="mt-1 font-display text-2xl leading-none sm:text-4xl">{work.title}</h2>
-          <p className="mt-2 hidden max-w-sm text-sm leading-relaxed text-bone/80 sm:block">{work.thesis}</p>
-          <p className="mt-3 text-[10px] tracking-[0.28em] text-mute uppercase">
+          <p className="mt-2 hidden max-w-sm text-sm leading-relaxed text-bone/90 sm:block">{work.thesis}</p>
+          <p className="mt-3 text-[10px] tracking-[0.28em] text-bone/70 uppercase">
             <span className="md:hidden">Tap to enter</span>
             <span className="hidden md:inline">Enter the room</span>
           </p>
