@@ -53,7 +53,9 @@ export function flyToRoom(slug: string, img?: HTMLImageElement | null) {
     flyTimer = 0;
     goToWork?.(slug);
     if (!goToWork) {
-      window.location.assign(`/work/${slug}`);
+      const path = `/work/${slug}`;
+      window.history.pushState(window.history.state, "", path);
+      window.dispatchEvent(new PopStateEvent("popstate"));
     }
     window.setTimeout(() => {
       useAtelier.setState({ pendingSlug: null, fly: null, letterboxOn: false });

@@ -14,11 +14,16 @@ export function Loader() {
   const [pct, setPct] = useState(0);
 
   useEffect(() => {
+    try {
+      if (sessionStorage.getItem("hoshii-entered") === "1") {
+        setEntered(true);
+        return;
+      }
+    } catch {
+      /* private mode */
+    }
     const t2 = window.setTimeout(() => setPhase(2), 500);
     const t3 = window.setTimeout(() => setReady(true), 1400);
-    const auto = window.setTimeout(() => {
-      if (!useAtelier.getState().entered) enter(false);
-    }, 8000);
     const start = performance.now();
     let raf = 0;
     const tick = (now: number) => {
@@ -30,11 +35,9 @@ export function Loader() {
     return () => {
       window.clearTimeout(t2);
       window.clearTimeout(t3);
-      window.clearTimeout(auto);
       cancelAnimationFrame(raf);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setEntered]);
 
   async function enter(withSound: boolean) {
     if (useAtelier.getState().entered) return;
@@ -45,6 +48,11 @@ export function Loader() {
       sound.enter();
     }
     setEntered(true);
+    try {
+      sessionStorage.setItem("hoshii-entered", "1");
+    } catch {
+      /* private mode */
+    }
     const quiet = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!quiet) {
       const s = useAtelier.getState();

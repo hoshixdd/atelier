@@ -33,7 +33,7 @@ function Timecode() {
       setT(`${p(hr)}:${p(min)}:${p(sec)}:${p(f)}`);
     };
     tick();
-    const id = window.setInterval(tick, 1000 / 24);
+    const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [entered]);
   return (

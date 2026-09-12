@@ -596,6 +596,8 @@ export function AtelierCanvas() {
     window.addEventListener("pointerdown", onDown, { passive: true });
     window.addEventListener("pointerup", onUp, { passive: true });
     window.addEventListener("wheel", onWheel, { passive: true });
+    const onLost = (e: Event) => e.preventDefault();
+    canvas.addEventListener("webglcontextlost", onLost);
 
     const resize = () => {
       const w = wrap.clientWidth;
@@ -851,6 +853,10 @@ export function AtelierCanvas() {
         m.position.set(v.x * 4.2, -v.y * 2.6, 2.15);
       });
 
+      if (document.hidden) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
       if (frameN % 4 === 0 && state.entered && !state.introPlaying && state.sceneMode === "home") {
         const next: SkyLabel[] = frames.map((g) => {
           proj.copy(g.position).project(camera);
@@ -878,6 +884,7 @@ export function AtelierCanvas() {
       window.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("wheel", onWheel);
+      canvas.removeEventListener("webglcontextlost", onLost);
       ro.disconnect();
       composer?.dispose();
       starTex.dispose();

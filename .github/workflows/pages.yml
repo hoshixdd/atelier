@@ -19,14 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NITRO_PRESET: github_pages
+      BASE_PATH: /atelier/
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build
+      - run: npm install
+      - run: npm run build || NITRO_PRESET=static npm run build
       - name: Pick static output
         run: |
           set -e
