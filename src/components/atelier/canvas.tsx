@@ -132,6 +132,46 @@ export function AtelierCanvas() {
     });
     const remnant = new THREE.Sprite(remnantMat);
     remnant.scale.set(3.5, 3.5, 1);
+    remnant.position.z = 0.02;
+    const remnantInnerMat = remnantMat.clone();
+    remnantInnerMat.opacity = 0;
+    remnantInnerMat.color.setHex(0xffd4a8);
+    const remnantInner = new THREE.Sprite(remnantInnerMat);
+    remnantInner.scale.set(2.05, 2.05, 1);
+    remnantInner.position.z = 0.14;
+    const remnantOuterMat = remnantMat.clone();
+    remnantOuterMat.opacity = 0;
+    remnantOuterMat.color.setHex(0xffc090);
+    const remnantOuter = new THREE.Sprite(remnantOuterMat);
+    remnantOuter.scale.set(4.35, 4.35, 1);
+    remnantOuter.position.z = -0.16;
+    const knot = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: starTex,
+        color: 0xffc898,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.55,
+      }),
+    );
+    knot.scale.set(1.05, 1.05, 1);
+
+    const ejecta = points(fillShell(isTouch ? 220 : 520, 0.55, 1.55), 0.045, 0.7, starTex);
+    (ejecta.mesh.material as THREE.PointsMaterial).color.setHex(0xffd8b0);
+    const jetPos = new Float32Array((isTouch ? 90 : 180) * 3);
+    for (let i = 0; i < jetPos.length / 3; i++) {
+      const up = i % 2 === 0 ? 1 : -1;
+      const y = up * (0.4 + Math.random() * 2.4);
+      const s = Math.abs(y) * 0.07;
+      jetPos[i * 3] = (Math.random() - 0.5) * s;
+      jetPos[i * 3 + 1] = y;
+      jetPos[i * 3 + 2] = (Math.random() - 0.5) * s;
+    }
+    const jets = points(jetPos, 0.038, 0.62, starTex);
+    (jets.mesh.material as THREE.PointsMaterial).color.setHex(0xffe6c8);
+    jets.mesh.rotation.z = 0.42;
+    jets.mesh.rotation.x = 0.18;
 
     function debris(count: number, r0: number, r1: number, flatten: number, warp: number, clumps: number, hex: number, size: number, arc = 1) {
       const pos = fillDebris(count, r0, r1, flatten, warp, clumps, arc);
@@ -148,7 +188,12 @@ export function AtelierCanvas() {
     outerArc.mesh.rotation.x = 1.05;
     outerArc.mesh.rotation.z = -0.35;
 
-    nova.add(remnant, innerDisk.mesh, midStream.mesh, outerArc.mesh);
+    nova.add(remnantOuter, remnant, remnantInner, knot, ejecta.mesh, jets.mesh, innerDisk.mesh, midStream.mesh, outerArc.mesh);
+    const remnantHit = new THREE.Mesh(
+      new THREE.SphereGeometry(1.2, 16, 16),
+      new THREE.MeshBasicMaterial({ visible: false }),
+    );
+    nova.add(remnantHit);
     scene.add(nova);
 
     const dustCount = isTouch ? 140 : 320;
@@ -171,6 +216,12 @@ export function AtelierCanvas() {
       remnantMat.map = tex;
       remnantMat.opacity = 0.96;
       remnantMat.needsUpdate = true;
+      remnantInnerMat.map = tex;
+      remnantInnerMat.opacity = 0.62;
+      remnantInnerMat.needsUpdate = true;
+      remnantOuterMat.map = tex;
+      remnantOuterMat.opacity = 0.28;
+      remnantOuterMat.needsUpdate = true;
     });
 
     const far = points(
@@ -630,6 +681,7 @@ export function AtelierCanvas() {
     const look = { x: 0, y: 0, z: 0 };
     const fov = { v: 42 };
     const orbit = { theta: 0.28, phi: 0.12, radius: 7.4 };
+    let dolly = 0;
     const press = { x: 0, y: 0, active: false, dragged: false };
 
     function interactive(t: EventTarget | null) {
@@ -710,22 +762,28 @@ export function AtelierCanvas() {
       if (state.sceneMode === "play") {
         const hits = raycaster.intersectObjects(shards.filter((s) => s.visible), false);
         const shard = hits[0]?.object as THREE.Sprite | undefined;
-        if (!shard || shard.userData.taken) return;
-        shard.userData.taken = true;
-        shard.visible = false;
-        const next = shards.filter((s) => s.userData.taken).length;
-        state.setHarvested(next);
-        sound.harvest();
-        pulse = Math.max(pulse, 0.4);
-        if (next >= SHARDS && !completing) {
-          completing = true;
+        if (shard && !shard.userData.taken) {
+          shard.userData.taken = true;
+          shard.visible = false;
+          const next = shards.filter((s) => s.userData.taken).length;
+          state.setHarvested(next);
+          sound.harvest();
+          pulse = Math.max(pulse, 0.4);
+          if (next >= SHARDS && !completing) {
+            completing = true;
+            sound.nova();
+            pulse = 1;
+            window.setTimeout(() => {
+              shards.forEach((s, i) => placeShard(s, i));
+              useAtelier.getState().addNova();
+              completing = false;
+            }, 1400);
+          }
+          return;
+        }
+        if (raycaster.intersectObject(remnantHit, false).length) {
+          pulse = Math.max(pulse, 0.9);
           sound.nova();
-          pulse = 1;
-          window.setTimeout(() => {
-            shards.forEach((s, i) => placeShard(s, i));
-            useAtelier.getState().addNova();
-            completing = false;
-          }, 1400);
         }
         return;
       }
@@ -749,6 +807,13 @@ export function AtelierCanvas() {
         return;
       }
       if (state.isTouch) state.setFocusSlug(null);
+      const remnantHits = raycaster.intersectObject(remnantHit, false);
+      if (remnantHits.length && (state.sceneMode === "home" || state.sceneMode === "work")) {
+        pulse = Math.max(pulse, 0.9);
+        sound.nova();
+        dolly = Math.max(dolly - 0.85, -2.2);
+        return;
+      }
       const secretHit = raycaster.intersectObjects(extraHits, false);
       const secret = secretHit[0]?.object.userData.secret as string | undefined;
       if (secret) {
@@ -759,8 +824,14 @@ export function AtelierCanvas() {
     };
 
     const onWheel = (e: WheelEvent) => {
-      if (useAtelier.getState().sceneMode !== "play") return;
-      orbit.radius = Math.max(5.2, Math.min(14, orbit.radius + e.deltaY * 0.008));
+      const mode = useAtelier.getState().sceneMode;
+      if (mode === "play") {
+        orbit.radius = Math.max(4.4, Math.min(16, orbit.radius + e.deltaY * 0.008));
+        return;
+      }
+      if (mode === "home" || mode === "work") {
+        dolly = Math.max(-2.4, Math.min(3.2, dolly + e.deltaY * 0.0065));
+      }
     };
 
     window.addEventListener("pointermove", onMove, { passive: true });
@@ -875,12 +946,12 @@ export function AtelierCanvas() {
         } else {
           const ang = sc * Math.PI * 1.2;
           const portrait = camera.aspect > 0 && camera.aspect < 0.86;
-          wantFov = (portrait ? 54 : 42) - sc * 6;
+          wantFov = (portrait ? 54 : 42) - sc * 6 - dolly * 2.2;
           tx = Math.sin(ang) * (0.9 + sc * 2.1) + pointer.x * 0.4 * motion + state.tiltX * 0.85 * motion;
           ty = Math.sin(ang * 0.5) * 0.45 - pointer.y * 0.22 * motion + (portrait ? 0.22 : 0) + state.tiltY * 0.55 * motion;
-          tz = tz - sc * 1.85 + (portrait ? 1.35 : 0);
-          lx = Math.sin(ang) * 0.35;
-          ly = portrait ? -0.15 : 0;
+          tz = tz - sc * 1.85 + dolly + (portrait ? 1.35 : 0);
+          lx = Math.sin(ang) * 0.35 + pointer.x * 0.08;
+          ly = (portrait ? -0.15 : 0) - pointer.y * 0.05;
           lz = 0;
         }
 
@@ -904,12 +975,26 @@ export function AtelierCanvas() {
       const ns =
         (0.85 + (target.novaScale - 0.85) * introEase) * state.star * (1 + pulse * 0.25) * novaMul;
       nova.scale.setScalar(nova.scale.x + (ns - nova.scale.x) * 0.06);
+      if (!playing && state.sceneMode !== "home" && state.sceneMode !== "work") dolly *= 0.9;
+      nova.rotation.x += (pointer.y * 0.1 * motion - nova.rotation.x) * 0.045;
+      nova.rotation.y += (pointer.x * 0.1 * motion - nova.rotation.y) * 0.045;
       remnant.material.rotation = t * 0.018 * motion;
-      const breathe = 1 + Math.sin(t * 0.55) * 0.012 * motion + pulse * 0.1;
+      remnantInner.material.rotation = -t * 0.032 * motion;
+      remnantOuter.material.rotation = t * 0.01 * motion;
+      const near = Math.max(0, 1.15 - camera.position.z * 0.09);
+      const breathe = 1 + Math.sin(t * 0.55) * 0.012 * motion + pulse * 0.12;
       remnant.scale.set(3.5 * breathe, 3.5 * breathe, 1);
+      remnantInner.scale.set(2.05 * (1 + pulse * 0.18), 2.05 * (1 + pulse * 0.18), 1);
+      remnantOuter.scale.set(4.35 + pulse * 0.45, 4.35 + pulse * 0.45, 1);
+      remnantInner.position.z = 0.14 + near * 0.22;
+      remnantOuter.position.z = -0.16 - near * 0.28;
+      knot.scale.setScalar(1.02 + Math.sin(t * 1.6) * 0.08 + pulse * 0.28);
       innerDisk.mesh.rotation.z = t * 0.055 * motion;
       midStream.mesh.rotation.z = 0.22 + t * 0.028 * motion;
       outerArc.mesh.rotation.z = -0.35 + t * 0.014 * motion;
+      ejecta.mesh.rotation.y = t * 0.07 * motion;
+      ejecta.mesh.rotation.x = t * 0.03 * motion;
+      jets.mesh.rotation.y = t * 0.12 * motion;
       motes.mesh.rotation.y = t * 0.08 * motion;
       motes.mesh.rotation.x = t * 0.03 * motion;
 
@@ -1096,6 +1181,14 @@ export function AtelierCanvas() {
       starTex.dispose();
       remnantMat.map?.dispose();
       remnantMat.dispose();
+      remnantInnerMat.dispose();
+      remnantOuterMat.dispose();
+      remnantHit.geometry.dispose();
+      (remnantHit.material as THREE.Material).dispose();
+      ejecta.geo.dispose();
+      ejecta.mat.dispose();
+      jets.geo.dispose();
+      jets.mat.dispose();
       innerDisk.geo.dispose();
       innerDisk.mat.dispose();
       midStream.geo.dispose();
