@@ -10,7 +10,7 @@ import { dayPart } from "@/lib/ceb";
 import { ASTER_FIGURES, ASTER_NODES, edgeKey, figureCentroid, figureComplete } from "@/lib/constellations";
 import { fillBox, fillDebris, fillShell, fillSpiral, points, starSprite } from "@/lib/cosmos";
 import { bindCapture } from "@/lib/capture";
-import { flyToRoom, flyToShot } from "@/lib/director";
+import { flyToRoom } from "@/lib/director";
 import { sound } from "@/lib/sound";
 import { useAtelier, type SceneMode, type SkyLabel } from "@/store/atelier";
 
@@ -190,7 +190,7 @@ export function AtelierCanvas() {
 
     nova.add(remnantOuter, remnant, remnantInner, knot, ejecta.mesh, jets.mesh, innerDisk.mesh, midStream.mesh, outerArc.mesh);
     const remnantHit = new THREE.Mesh(
-      new THREE.SphereGeometry(1.2, 16, 16),
+      new THREE.SphereGeometry(1.7, 20, 16),
       new THREE.MeshBasicMaterial({ visible: false }),
     );
     nova.add(remnantHit);
@@ -682,6 +682,10 @@ export function AtelierCanvas() {
     const fov = { v: 42 };
     const orbit = { theta: 0.28, phi: 0.12, radius: 7.4 };
     let dolly = 0;
+    let remnantGrab = false;
+    let remnantYaw = 0;
+    let remnantPitch = 0;
+    let remnantSpin = 0;
     const press = { x: 0, y: 0, active: false, dragged: false };
 
     function interactive(t: EventTarget | null) {
@@ -699,6 +703,15 @@ export function AtelierCanvas() {
       pointer.y = ny;
       const state = useAtelier.getState();
       state.setPointer(nx, ny);
+      if (press.active && remnantGrab && (state.sceneMode === "home" || state.sceneMode === "work")) {
+        const dx = e.clientX - press.x;
+        const dy = e.clientY - press.y;
+        if (Math.hypot(dx, dy) > 4) press.dragged = true;
+        remnantYaw += dx * 0.005;
+        remnantPitch = Math.max(-0.7, Math.min(0.7, remnantPitch + dy * 0.004));
+        press.x = e.clientX;
+        press.y = e.clientY;
+      }
       if (press.active && state.sceneMode === "play") {
         const dx = e.clientX - press.x;
         const dy = e.clientY - press.y;
@@ -756,11 +769,21 @@ export function AtelierCanvas() {
       press.y = e.clientY;
       press.active = true;
       press.dragged = false;
+      const state = useAtelier.getState();
+      remnantGrab = false;
+      if (state.entered && (state.sceneMode === "home" || state.sceneMode === "work") && !interactive(e.target)) {
+        ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+        raycaster.setFromCamera(ndc, camera);
+        if (!raycaster.intersectObjects(hitPlanes, false).length && raycaster.intersectObject(remnantHit, false).length) {
+          remnantGrab = true;
+        }
+      }
     };
 
     const onUp = (e: PointerEvent) => {
       if (!press.active) return;
       press.active = false;
+      remnantGrab = false;
       const state = useAtelier.getState();
       if (state.deskOpen || state.paletteOpen || state.secretId || !state.entered || interactive(e.target)) return;
       if (press.dragged) return;
@@ -816,13 +839,10 @@ export function AtelierCanvas() {
       if (state.isTouch) state.setFocusSlug(null);
       const remnantHits = raycaster.intersectObject(remnantHit, false);
       if (remnantHits.length && (state.sceneMode === "home" || state.sceneMode === "work")) {
-        if (state.isTouch && state.focusSlug !== "remnant") {
-          sound.hover();
-          state.setFocusSlug("remnant");
-          return;
-        }
-        pulse = Math.max(pulse, 0.85);
-        flyToShot("/about");
+        pulse = Math.max(pulse, 0.95);
+        remnantSpin = 1.35;
+        sound.whoosh();
+        remnantGrab = false;
         return;
       }
       const secretHit = raycaster.intersectObjects(extraHits, false);
@@ -993,11 +1013,14 @@ export function AtelierCanvas() {
       const novaMul = (world?.nova ?? 1) * (state.novas > 0 ? 1.08 : 1);
       const ns =
         (0.85 + (target.novaScale - 0.85) * introEase) * state.star * (1 + pulse * 0.25) * novaMul;
-      nova.scale.setScalar(nova.scale.x + (ns - nova.scale.x) * 0.06);
+      const remnantHeld = state.focusSlug === "remnant" || state.hoverLabel === "Hoshi";
+      const nss = ns * (remnantHeld ? 1.12 : 1);
+      nova.scale.setScalar(nova.scale.x + (nss - nova.scale.x) * 0.08);
       if (!playing && state.sceneMode !== "home" && state.sceneMode !== "work") dolly *= 0.9;
-      nova.rotation.x += (pointer.y * 0.1 * motion - nova.rotation.x) * 0.045;
-      nova.rotation.y += (pointer.x * 0.1 * motion - nova.rotation.y) * 0.045;
-      remnant.material.rotation = t * 0.018 * motion;
+      remnantSpin *= 0.955;
+      nova.rotation.x += (pointer.y * 0.08 * motion + remnantPitch - nova.rotation.x) * 0.05;
+      nova.rotation.y += (pointer.x * 0.08 * motion + remnantYaw - nova.rotation.y) * 0.05;
+      remnant.material.rotation = t * 0.018 * motion + remnantSpin * 0.35;
       remnantInner.material.rotation = -t * 0.032 * motion;
       remnantOuter.material.rotation = t * 0.01 * motion;
       const near = Math.max(0, 1.15 - camera.position.z * 0.09);
@@ -1008,7 +1031,7 @@ export function AtelierCanvas() {
       remnantInner.position.z = 0.14 + near * 0.22;
       remnantOuter.position.z = -0.16 - near * 0.28;
       knot.scale.setScalar(1.02 + Math.sin(t * 1.6) * 0.08 + pulse * 0.28);
-      innerDisk.mesh.rotation.z = t * 0.055 * motion;
+      innerDisk.mesh.rotation.z = t * (0.055 + remnantSpin * 0.4) * motion;
       midStream.mesh.rotation.z = 0.22 + t * 0.028 * motion;
       outerArc.mesh.rotation.z = -0.35 + t * 0.014 * motion;
       ejecta.mesh.rotation.y = t * 0.07 * motion;

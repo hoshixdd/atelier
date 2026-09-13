@@ -8,12 +8,10 @@ export function WorldLabels() {
   const entered = useAtelier((s) => s.entered);
   const mode = useAtelier((s) => s.sceneMode);
   const pending = useAtelier((s) => s.pendingSlug);
-  const focus = useAtelier((s) => s.focusSlug);
   if (!entered || introPlaying || pending || (mode !== "home" && mode !== "work")) return null;
   return (
     <div className="pointer-events-none fixed inset-0 z-[8]">
       {labels.map((l) => {
-        const on = focus === l.id;
         return (
           <button
             key={l.id}
@@ -36,12 +34,6 @@ export function WorldLabels() {
             style={{ left: `${l.x}%`, top: `${l.y}%` }}
           >
             <span className="size-20 rounded-full md:size-24" />
-            <span
-              className={`mt-1 max-w-[9rem] text-center text-[10px] font-medium tracking-[0.18em] uppercase md:hidden ${on ? "text-bone" : "text-bone/85"}`}
-              style={{ textShadow: "0 1px 2px #000, 0 0 12px #000" }}
-            >
-              {l.index} · {l.title}
-            </span>
           </button>
         );
       })}
