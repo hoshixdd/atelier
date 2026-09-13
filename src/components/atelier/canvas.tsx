@@ -123,139 +123,93 @@ export function AtelierCanvas() {
     const loader = new THREE.TextureLoader();
 
     const nova = new THREE.Group();
-    const remnantMat = new THREE.SpriteMaterial({
-      color: 0xffe8c8,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      opacity: 0,
-    });
-    const remnant = new THREE.Sprite(remnantMat);
-    remnant.scale.set(3.55, 3.55, 1);
-    const haloMat = new THREE.SpriteMaterial({
+    const galaxyMat = new THREE.SpriteMaterial({
       color: 0xffffff,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       opacity: 0,
     });
-    const halo = new THREE.Sprite(haloMat);
-    halo.scale.set(4.55, 4.55, 1);
+    const galaxy = new THREE.Sprite(galaxyMat);
+    galaxy.scale.set(4.7, 4.7, 1);
     const core = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: starTex,
-        color: 0xfff1d6,
+        color: 0xf4f8ff,
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         opacity: 0.98,
       }),
     );
-    core.scale.set(0.72, 0.72, 1);
-    const ember = new THREE.Sprite(
+    core.scale.set(0.95, 0.95, 1);
+    const bulge = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: starTex,
-        color: 0xffc070,
+        color: 0xc8dcff,
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
-        opacity: 0.9,
+        opacity: 0.72,
       }),
     );
-    ember.scale.set(2.15, 2.15, 1);
-    const lensMat = new THREE.ShaderMaterial({
+    bulge.scale.set(1.85, 1.85, 1);
+    const flareMat = new THREE.SpriteMaterial({
+      color: 0xffffff,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uTime: { value: 0 } },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        uniform float uTime;
-        void main() {
-          vec2 p = vUv * 2.0 - 1.0;
-          float r = length(p);
-          float ring = smoothstep(0.04, 0.0, abs(r - 0.78)) * 0.35;
-          float inner = smoothstep(0.07, 0.0, abs(r - 0.52)) * 0.22;
-          float glow = exp(-r * 3.2) * 0.08;
-          vec3 col = vec3(1.0, 0.86, 0.58) * inner
-                   + vec3(0.45, 0.68, 1.0) * ring
-                   + vec3(1.0, 0.94, 0.82) * glow;
-          float a = ring * 0.55 + inner * 0.4 + glow;
-          gl_FragColor = vec4(col, a);
-        }
-      `,
+      opacity: 0,
     });
-    const lens = new THREE.Mesh(new THREE.CircleGeometry(1.9, 72), lensMat);
-    const smokeMat = new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      uniforms: { uTime: { value: 0 } },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        uniform float uTime;
-        void main() {
-          vec2 p = vUv * 2.0 - 1.0;
-          float r = length(p);
-          float a = atan(p.y, p.x);
-          float ragged = 0.78 + 0.05 * sin(a * 7.0 + uTime * 0.12) + 0.025 * sin(a * 17.0 - uTime * 0.08);
-          float rim = smoothstep(0.055, 0.0, abs(r - ragged));
-          float fil = pow(max(0.0, sin(a * 11.0 + r * 22.0 - uTime * 0.28)), 10.0);
-          float wisps = pow(abs(sin(a * 5.0 + r * 9.0 - uTime * 0.18)), 14.0);
-          float shell = rim * (0.45 + fil * 0.55 + wisps * 0.35);
-          vec3 ice = vec3(0.42, 0.72, 1.0);
-          vec3 violet = vec3(0.38, 0.32, 0.92);
-          vec3 col = mix(ice, violet, fil);
-          gl_FragColor = vec4(col, shell * 0.16);
-        }
-      `,
+    const flare = new THREE.Sprite(flareMat);
+    flare.scale.set(4.2, 0.62, 1);
+    const rings = new THREE.Group();
+    [1.22, 1.52, 1.88].forEach((rad, i) => {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(rad, 0.007 + i * 0.002, 8, 140),
+        new THREE.MeshBasicMaterial({
+          color: 0xffe0a8,
+          transparent: true,
+          opacity: 0.38 - i * 0.08,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+        }),
+      );
+      ring.rotation.x = Math.PI / 2.28;
+      ring.rotation.z = 0.16 * i;
+      rings.add(ring);
     });
-    const smoke = new THREE.Mesh(new THREE.CircleGeometry(3.95, 80), smokeMat);
-    smoke.position.z = 0.05;
-    nova.add(halo, remnant, smoke, ember, core, lens);
+    rings.rotation.z = 0.35;
+    nova.add(galaxy, rings, bulge, core, flare);
     scene.add(nova);
 
-    const dustCount = isTouch ? 160 : 380;
+    const dustCount = isTouch ? 120 : 260;
     const dustPos = new Float32Array(dustCount * 3);
     for (let i = 0; i < dustCount; i++) {
       const a = Math.random() * Math.PI * 2;
-      const b = (Math.random() - 0.5) * Math.PI;
-      const rr = 0.7 + Math.random() * 2.1;
+      const b = (Math.random() - 0.5) * 0.7;
+      const rr = 0.9 + Math.random() * 2.0;
       dustPos[i * 3] = Math.cos(a) * Math.cos(b) * rr;
-      dustPos[i * 3 + 1] = Math.sin(b) * rr * 0.48;
-      dustPos[i * 3 + 2] = Math.sin(a) * Math.cos(b) * rr * 0.7;
+      dustPos[i * 3 + 1] = Math.sin(b) * rr * 0.35;
+      dustPos[i * 3 + 2] = Math.sin(a) * Math.cos(b) * rr * 0.55;
     }
-    const dust = points(dustPos, 0.04, 0.55, starTex);
-    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xc8d4e8);
-    (dust.mesh.material as THREE.PointsMaterial).opacity = 0.32;
+    const dust = points(dustPos, 0.038, 0.45, starTex);
+    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xd8e8ff);
     scene.add(dust.mesh);
 
-    loader.load("/cosmos/remnant.png", (tex) => {
+    loader.load("/cosmos/galaxy.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
-      remnantMat.map = tex;
-      remnantMat.opacity = 0.92;
-      remnantMat.needsUpdate = true;
+      galaxyMat.map = tex;
+      galaxyMat.opacity = 0.95;
+      galaxyMat.needsUpdate = true;
     });
-    loader.load("/cosmos/halo.png", (tex) => {
+    loader.load("/cosmos/flare.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
-      haloMat.map = tex;
-      haloMat.opacity = 0.48;
-      haloMat.needsUpdate = true;
+      flareMat.map = tex;
+      flareMat.opacity = 0.55;
+      flareMat.needsUpdate = true;
     });
 
     const far = points(
@@ -884,9 +838,8 @@ export function AtelierCanvas() {
         pulse = Math.max(pulse, 0.72);
         lastStrike = state.strikeN;
       }
-      lensMat.uniforms.uTime.value = t;
-      smokeMat.uniforms.uTime.value = t;
-      smoke.rotation.z = t * 0.04 * motion;
+      dust.mesh.rotation.y = t * 0.018 * motion;
+      dust.mesh.rotation.z = Math.sin(t * 0.11) * 0.05;
       if (state.entered && introT0 === 0) introT0 = performance.now();
       const introK = !state.entered
         ? 0
@@ -894,8 +847,6 @@ export function AtelierCanvas() {
           ? 1
           : Math.min(1, (performance.now() - introT0) / 5200);
       const introEase = 1 - Math.pow(1 - introK, 3);
-      dust.mesh.rotation.y = t * 0.018 * motion;
-      dust.mesh.rotation.z = Math.sin(t * 0.11) * 0.05;
 
       const ambT = part === "night" ? 0.016 : part === "morning" ? 0.03 : part === "dusk" ? 0.024 : 0.028;
       const keyT = part === "night" ? 0.22 : part === "morning" ? 0.48 : part === "dusk" ? 0.36 : 0.42;
@@ -992,13 +943,13 @@ export function AtelierCanvas() {
       const ns =
         (0.85 + (target.novaScale - 0.85) * introEase) * state.star * (1 + pulse * 0.25) * novaMul;
       nova.scale.setScalar(nova.scale.x + (ns - nova.scale.x) * 0.06);
-      remnant.material.rotation = t * 0.03 * motion;
-      halo.material.rotation = -t * 0.018 * motion;
-      const breathe = 1 + Math.sin(t * 0.7) * 0.015 * motion + pulse * 0.12;
-      remnant.scale.set(3.45 * breathe, 3.45 * breathe, 1);
-      halo.scale.set(4.55 + pulse * 0.35 + state.novas * 0.08, 4.55 + pulse * 0.35 + state.novas * 0.08, 1);
-      core.scale.setScalar(0.5 + Math.sin(t * 2.2) * 0.06 + pulse * 0.5);
-      ember.scale.setScalar(2.08 + Math.sin(t * 0.42) * 0.14);
+      galaxy.material.rotation = t * 0.012 * motion;
+      rings.rotation.z = 0.35 + t * 0.01 * motion;
+      const breathe = 1 + Math.sin(t * 0.55) * 0.012 * motion + pulse * 0.08;
+      galaxy.scale.set(4.7 * breathe, 4.7 * breathe, 1);
+      core.scale.setScalar(0.88 + Math.sin(t * 1.8) * 0.06 + pulse * 0.35);
+      bulge.scale.setScalar(1.8 + Math.sin(t * 0.9) * 0.08);
+      flare.material.rotation = Math.sin(t * 0.2) * 0.04;
       motes.mesh.rotation.y = t * 0.08 * motion;
       motes.mesh.rotation.x = t * 0.03 * motion;
 
@@ -1011,7 +962,7 @@ export function AtelierCanvas() {
       (scene.fog as THREE.FogExp2).color.setHex(fogCol);
       (scene.fog as THREE.FogExp2).density =
         (0.008 + (1 / target.fog) * 0.12) * state.fog * (part === "night" ? 1.1 : 1);
-      rim.intensity = 14 + pulse * 22;
+      rim.intensity = 7 + pulse * 10;
       if (world) rim.color.setHex(world.rim);
       else rim.color.setHex(0x7ec8e3);
       warm.intensity = 8 + pulse * 16;
@@ -1172,8 +1123,6 @@ export function AtelierCanvas() {
       window.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("webglcontextlost", onLost);
       bindCapture(null);
-      lensMat.dispose();
-      lens.geometry.dispose();
       dust.geo.dispose();
       (dust.mesh.material as THREE.Material).dispose();
       asterLineGeo.dispose();
@@ -1185,12 +1134,15 @@ export function AtelierCanvas() {
       ro.disconnect();
       composer?.dispose();
       starTex.dispose();
-      remnantMat.map?.dispose();
-      remnantMat.dispose();
-      haloMat.map?.dispose();
-      haloMat.dispose();
-      smokeMat.dispose();
-      smoke.geometry.dispose();
+      galaxyMat.map?.dispose();
+      galaxyMat.dispose();
+      flareMat.map?.dispose();
+      flareMat.dispose();
+      rings.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (m.geometry) m.geometry.dispose();
+        if (m.material) (m.material as THREE.Material).dispose();
+      });
       far.geo.dispose();
       far.mat.dispose();
       mid.geo.dispose();
