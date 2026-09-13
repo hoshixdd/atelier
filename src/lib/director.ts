@@ -23,37 +23,41 @@ export function sluglineFor(path: string) {
 
 export type FlyRect = { src: string; x: number; y: number; w: number; h: number };
 
-type GoToWork = (slug: string) => void;
-let goToWork: GoToWork | null = null;
-let flyTimer = 0;
+type GoPath = (path: string) => void;
+let goToPath: GoPath | null = null;
 
-export function bindGoToWork(fn: GoToWork | null) {
-  goToWork = fn;
+export function bindGo(fn: GoPath | null) {
+  goToPath = fn;
 }
 
-export function flyToRoom(slug: string, img?: HTMLImageElement | null) {
+export function bindGoToWork(fn: ((slug: string) => void) | null) {
+  goToPath = fn
+    ? (path) => {
+        const slug = path.replace("/work/", "");
+        fn(slug);
+      }
+    : null;
+}
+
+let flyTimer = 0;
+
+function shoot(path: string, pending: string | null, fly: FlyRect | null) {
   const { reducedMotion } = useAtelier.getState();
-  let fly: FlyRect | null = null;
-  if (img && !reducedMotion) {
-    const r = img.getBoundingClientRect();
-    fly = { src: img.currentSrc || img.src, x: r.left, y: r.top, w: r.width, h: r.height };
-  }
-  sound.click();
-  sound.duck(reducedMotion ? 200 : 900);
+  sound.whoosh();
+  sound.duck(reducedMotion ? 200 : 1100);
   useAtelier.setState({
-    pendingSlug: slug,
-    focusSlug: slug,
+    pendingSlug: pending,
+    focusSlug: pending,
     fly,
     letterboxOn: !reducedMotion,
-    slugline: sluglineFor(`/work/${slug}`),
+    slugline: sluglineFor(path),
   });
   if (flyTimer) window.clearTimeout(flyTimer);
-  const delay = reducedMotion ? 0 : 720;
+  const delay = reducedMotion ? 0 : 780;
   flyTimer = window.setTimeout(() => {
     flyTimer = 0;
-    goToWork?.(slug);
-    if (!goToWork) {
-      const path = `/work/${slug}`;
+    if (goToPath) goToPath(path);
+    else {
       window.history.pushState(window.history.state, "", path);
       window.dispatchEvent(new PopStateEvent("popstate"));
     }
@@ -61,4 +65,17 @@ export function flyToRoom(slug: string, img?: HTMLImageElement | null) {
       useAtelier.setState({ pendingSlug: null, fly: null, letterboxOn: false });
     }, 80);
   }, delay);
+}
+
+export function flyToRoom(slug: string, img?: HTMLImageElement | null) {
+  let fly: FlyRect | null = null;
+  if (img && !useAtelier.getState().reducedMotion) {
+    const r = img.getBoundingClientRect();
+    fly = { src: img.currentSrc || img.src, x: r.left, y: r.top, w: r.width, h: r.height };
+  }
+  shoot(`/work/${slug}`, slug, fly);
+}
+
+export function flyToShot(path: string, pending = "remnant") {
+  shoot(path, pending, null);
 }

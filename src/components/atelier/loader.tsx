@@ -16,7 +16,7 @@ export function Loader() {
 
   useEffect(() => {
     try {
-      if (sessionStorage.getItem("hoshii-entered") === "1") {
+      if (sessionStorage.getItem("hoshii-entered-v2") === "1") {
         setEntered(true);
         return;
       }
@@ -58,7 +58,7 @@ export function Loader() {
     }
     setEntered(true);
     try {
-      sessionStorage.setItem("hoshii-entered", "1");
+      sessionStorage.setItem("hoshii-entered-v2", "1");
     } catch {
       /* private mode */
     }
@@ -67,12 +67,14 @@ export function Loader() {
       const s = useAtelier.getState();
       s.setIntroPlaying(true);
       s.setLetterboxOn(true);
-      s.setSlugline("TITLE CARD — HOSHIIXDD");
-      window.setTimeout(() => useAtelier.getState().setSlugline(null), 1800);
+      s.setSlugline("FADE IN:");
+      window.setTimeout(() => useAtelier.getState().setSlugline("TITLE CARD — HOSHIIXDD"), 900);
+      window.setTimeout(() => useAtelier.getState().setSlugline("INT. THE BELT — CONTINUOUS"), 2800);
+      window.setTimeout(() => useAtelier.getState().setSlugline(null), 5200);
       window.setTimeout(() => {
         useAtelier.getState().setIntroPlaying(false);
         useAtelier.getState().setLetterboxOn(false);
-      }, 5200);
+      }, 7200);
     }
   }
 

@@ -3,7 +3,7 @@ import { useEffect, type ReactNode } from "react";
 import Lenis from "lenis";
 import { sound } from "@/lib/sound";
 import { cebHour, dayPart } from "@/lib/ceb";
-import { bindGoToWork } from "@/lib/director";
+import { bindGo } from "@/lib/director";
 import { loadDesk, useAtelier } from "@/store/atelier";
 import { AtelierCanvas } from "./canvas";
 import { Cursor } from "./cursor";
@@ -101,10 +101,14 @@ export function SiteShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    bindGoToWork((slug) => {
-      void navigate({ to: "/work/$slug", params: { slug } });
+    bindGo((path) => {
+      if (path.startsWith("/work/")) {
+        void navigate({ to: "/work/$slug", params: { slug: path.slice("/work/".length) } });
+        return;
+      }
+      void navigate({ to: path });
     });
-    return () => bindGoToWork(null);
+    return () => bindGo(null);
   }, [navigate]);
 
   return (

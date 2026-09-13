@@ -10,7 +10,7 @@ import { dayPart } from "@/lib/ceb";
 import { ASTER_FIGURES, ASTER_NODES, edgeKey, figureCentroid, figureComplete } from "@/lib/constellations";
 import { fillBox, fillDebris, fillShell, fillSpiral, points, starSprite } from "@/lib/cosmos";
 import { bindCapture } from "@/lib/capture";
-import { flyToRoom } from "@/lib/director";
+import { flyToRoom, flyToShot } from "@/lib/director";
 import { sound } from "@/lib/sound";
 import { useAtelier, type SceneMode, type SkyLabel } from "@/store/atelier";
 
@@ -677,7 +677,7 @@ export function AtelierCanvas() {
     let frameN = 0;
     let introT0 = 0;
     const pointer = { x: 0, y: 0 };
-    const cam = { x: 0, y: 0, z: 0.9 };
+    const cam = { x: 0, y: 0, z: 0.42 };
     const look = { x: 0, y: 0, z: 0 };
     const fov = { v: 42 };
     const orbit = { theta: 0.28, phi: 0.12, radius: 7.4 };
@@ -736,6 +736,13 @@ export function AtelierCanvas() {
         if (title !== state.hoverLabel) state.setHoverLabel(title ?? null);
         if (!state.isTouch && slug && slug !== state.focusSlug) state.setFocusSlug(slug);
         return;
+      }
+      if (state.sceneMode === "home" || state.sceneMode === "work") {
+        if (raycaster.intersectObject(remnantHit, false).length) {
+          if (state.hoverLabel !== "Hoshi") state.setHoverLabel("Hoshi");
+          if (!state.isTouch && state.focusSlug !== "remnant") state.setFocusSlug("remnant");
+          return;
+        }
       }
       if (!state.isTouch && state.focusSlug) state.setFocusSlug(null);
       const unnamed = raycaster.intersectObjects(extraHits, false);
@@ -809,9 +816,13 @@ export function AtelierCanvas() {
       if (state.isTouch) state.setFocusSlug(null);
       const remnantHits = raycaster.intersectObject(remnantHit, false);
       if (remnantHits.length && (state.sceneMode === "home" || state.sceneMode === "work")) {
-        pulse = Math.max(pulse, 0.9);
-        sound.nova();
-        dolly = Math.max(dolly - 0.85, -2.2);
+        if (state.isTouch && state.focusSlug !== "remnant") {
+          sound.hover();
+          state.setFocusSlug("remnant");
+          return;
+        }
+        pulse = Math.max(pulse, 0.85);
+        flyToShot("/about");
         return;
       }
       const secretHit = raycaster.intersectObjects(extraHits, false);
@@ -877,7 +888,7 @@ export function AtelierCanvas() {
         ? 0
         : reduced || state.reducedMotion
           ? 1
-          : Math.min(1, (performance.now() - introT0) / 5200);
+          : Math.min(1, (performance.now() - introT0) / 7200);
       const introEase = 1 - Math.pow(1 - introK, 3);
 
       const ambT = part === "night" ? 0.016 : part === "morning" ? 0.03 : part === "dusk" ? 0.024 : 0.028;
@@ -905,13 +916,21 @@ export function AtelierCanvas() {
         const sc = state.sceneMode === "home" ? state.homeScroll : 0;
         let tx = 0;
         let ty = 0;
-        let tz = 0.85 + (target.z - 0.85) * introEase;
+        let tz = 0.42 + (target.z - 0.42) * introEase;
         let lx = 0;
         let ly = 0;
         let lz = 0;
         let wantFov = 42;
 
-        if (dock && state.pendingSlug) {
+        if (state.pendingSlug === "remnant") {
+          wantFov = 24;
+          tx = 0;
+          ty = 0;
+          tz = 1.7;
+          lx = 0;
+          ly = 0;
+          lz = 0;
+        } else if (dock && state.pendingSlug) {
           wantFov = 28;
           tx = dock.position.x * 0.78;
           ty = dock.position.y * 0.78;
