@@ -10,7 +10,7 @@ import { dayPart } from "@/lib/ceb";
 import { ASTER_FIGURES, ASTER_NODES, edgeKey, figureCentroid, figureComplete } from "@/lib/constellations";
 import { fillBox, fillDebris, fillShell, fillSpiral, points, starSprite } from "@/lib/cosmos";
 import { bindCapture } from "@/lib/capture";
-import { flyToRoom } from "@/lib/director";
+import { flyToRoom, flyToShot } from "@/lib/director";
 import { sound } from "@/lib/sound";
 import { useAtelier, type SceneMode, type SkyLabel } from "@/store/atelier";
 
@@ -626,7 +626,8 @@ export function AtelierCanvas() {
         }
       }, 3200);
       sound.letter();
-      pulse = Math.max(pulse, 0.7);
+      pulse = Math.max(pulse, 1);
+      remnantSpin = Math.max(remnantSpin, 1.1);
     }
     function connectAster(id: string, state: ReturnType<typeof useAtelier.getState>) {
       if (asterPick === id) {
@@ -636,6 +637,7 @@ export function AtelierCanvas() {
       if (!asterPick) {
         asterPick = id;
         sound.hover();
+        pulse = Math.max(pulse, 0.35);
         return;
       }
       const key = edgeKey(asterPick, id);
@@ -644,7 +646,8 @@ export function AtelierCanvas() {
       asterHave.add(key);
       rebuildAsterLines();
       sound.click();
-      pulse = Math.max(pulse, 0.28);
+      pulse = Math.max(pulse, 0.72);
+      remnantSpin = Math.max(remnantSpin, 0.65);
       for (const fig of ASTER_FIGURES) {
         if (state.asterFound.includes(fig.id)) continue;
         if (!figureComplete(fig, asterHave)) continue;
@@ -834,14 +837,22 @@ export function AtelierCanvas() {
           return;
         }
         flyToRoom(slug);
+        pulse = Math.max(pulse, 0.55);
+        remnantSpin = Math.max(remnantSpin, 0.4);
         return;
       }
       if (state.isTouch) state.setFocusSlug(null);
       const remnantHits = raycaster.intersectObject(remnantHit, false);
       if (remnantHits.length && (state.sceneMode === "home" || state.sceneMode === "work")) {
-        pulse = Math.max(pulse, 0.95);
+        if (state.isTouch && state.focusSlug !== "remnant") {
+          sound.hover();
+          state.setFocusSlug("remnant");
+          pulse = Math.max(pulse, 0.45);
+          return;
+        }
+        pulse = Math.max(pulse, 1);
         remnantSpin = 1.35;
-        sound.whoosh();
+        flyToShot("/about");
         remnantGrab = false;
         return;
       }
@@ -898,7 +909,8 @@ export function AtelierCanvas() {
       pulse *= 0.955;
       frameN += 1;
       if (state.strikeN !== lastStrike) {
-        pulse = Math.max(pulse, 0.72);
+        pulse = Math.max(pulse, 0.88);
+        remnantSpin = Math.max(remnantSpin, 0.8);
         lastStrike = state.strikeN;
       }
       dust.mesh.rotation.y = t * 0.018 * motion;
@@ -1024,13 +1036,17 @@ export function AtelierCanvas() {
       remnantInner.material.rotation = -t * 0.032 * motion;
       remnantOuter.material.rotation = t * 0.01 * motion;
       const near = Math.max(0, 1.15 - camera.position.z * 0.09);
-      const breathe = 1 + Math.sin(t * 0.55) * 0.012 * motion + pulse * 0.12;
+      const heart = 1 + Math.sin(t * 1.45) * 0.045 * motion;
+      const breathe = heart + pulse * 0.22;
       remnant.scale.set(3.5 * breathe, 3.5 * breathe, 1);
-      remnantInner.scale.set(2.05 * (1 + pulse * 0.18), 2.05 * (1 + pulse * 0.18), 1);
-      remnantOuter.scale.set(4.35 + pulse * 0.45, 4.35 + pulse * 0.45, 1);
+      remnantInner.scale.set(2.05 * (heart + pulse * 0.32), 2.05 * (heart + pulse * 0.32), 1);
+      remnantOuter.scale.set(4.35 * heart + pulse * 0.7, 4.35 * heart + pulse * 0.7, 1);
       remnantInner.position.z = 0.14 + near * 0.22;
       remnantOuter.position.z = -0.16 - near * 0.28;
-      knot.scale.setScalar(1.02 + Math.sin(t * 1.6) * 0.08 + pulse * 0.28);
+      knot.scale.setScalar(1.02 + Math.sin(t * 2.1) * 0.12 + pulse * 0.45);
+      if (remnantMat.map) remnantMat.opacity = 0.9 + Math.sin(t * 1.45) * 0.05 + pulse * 0.08;
+      if (remnantInnerMat.map) remnantInnerMat.opacity = 0.55 + pulse * 0.2;
+      if (remnantOuterMat.map) remnantOuterMat.opacity = 0.22 + pulse * 0.18;
       innerDisk.mesh.rotation.z = t * (0.055 + remnantSpin * 0.4) * motion;
       midStream.mesh.rotation.z = 0.22 + t * 0.028 * motion;
       outerArc.mesh.rotation.z = -0.35 + t * 0.014 * motion;
