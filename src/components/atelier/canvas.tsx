@@ -133,17 +133,6 @@ export function AtelierCanvas() {
     const remnant = new THREE.Sprite(remnantMat);
     remnant.scale.set(3.5, 3.5, 1);
 
-    const farGalaxyMat = new THREE.SpriteMaterial({
-      color: 0xffffff,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      opacity: 0,
-    });
-    const farGalaxy = new THREE.Sprite(farGalaxyMat);
-    farGalaxy.scale.set(28, 28, 1);
-    farGalaxy.position.z = -11;
-
     function debris(count: number, r0: number, r1: number, flatten: number, warp: number, clumps: number, hex: number, size: number, arc = 1) {
       const pos = fillDebris(count, r0, r1, flatten, warp, clumps, arc);
       const cloud = points(pos, size, 0.82, starTex);
@@ -160,7 +149,6 @@ export function AtelierCanvas() {
     outerArc.mesh.rotation.z = -0.35;
 
     nova.add(remnant, innerDisk.mesh, midStream.mesh, outerArc.mesh);
-    scene.add(farGalaxy);
     scene.add(nova);
 
     const dustCount = isTouch ? 140 : 320;
@@ -183,12 +171,6 @@ export function AtelierCanvas() {
       remnantMat.map = tex;
       remnantMat.opacity = 0.96;
       remnantMat.needsUpdate = true;
-    });
-    loader.load("/cosmos/galaxy.png", (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      farGalaxyMat.map = tex;
-      farGalaxyMat.opacity = 0.38;
-      farGalaxyMat.needsUpdate = true;
     });
 
     const far = points(
@@ -928,7 +910,6 @@ export function AtelierCanvas() {
       innerDisk.mesh.rotation.z = t * 0.055 * motion;
       midStream.mesh.rotation.z = 0.22 + t * 0.028 * motion;
       outerArc.mesh.rotation.z = -0.35 + t * 0.014 * motion;
-      farGalaxy.material.rotation = t * 0.004 * motion;
       motes.mesh.rotation.y = t * 0.08 * motion;
       motes.mesh.rotation.x = t * 0.03 * motion;
 
@@ -1115,8 +1096,6 @@ export function AtelierCanvas() {
       starTex.dispose();
       remnantMat.map?.dispose();
       remnantMat.dispose();
-      farGalaxyMat.map?.dispose();
-      farGalaxyMat.dispose();
       innerDisk.geo.dispose();
       innerDisk.mat.dispose();
       midStream.geo.dispose();
