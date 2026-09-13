@@ -37,6 +37,12 @@ function About() {
           className="lg:col-span-7 lg:row-span-2"
         />
         <Plate
+          src="/portrait/house.jpg"
+          alt={`${SITE.person} at the desk, night`}
+          caption="Night · the desk"
+          className="lg:col-span-5"
+        />
+        <Plate
           src="/portrait/overhead.jpg"
           alt={`${SITE.person} from above, a star on the cheek`}
           caption="Looking down · a star"
@@ -46,23 +52,15 @@ function About() {
           src="/portrait/bench.jpg"
           alt={`${SITE.person} in the gym`}
           caption="The gym · after"
-          className="lg:col-span-5"
+          className="lg:col-span-6"
+        />
+        <Plate
+          src="/portrait/mirror-bw.jpg"
+          alt={`${SITE.person} in the mirror, Cebu`}
+          caption={`Cebu · ${SITE.location}`}
+          className="lg:col-span-6"
         />
       </section>
-
-      <Reveal className="relative mt-6 bg-fog">
-        <div className="flex items-center justify-center p-4 sm:p-8">
-          <img
-            src="/portrait/mirror-bw.jpg"
-            alt={`${SITE.person} in the mirror, Cebu`}
-            className="max-h-[88vh] w-auto max-w-full object-contain"
-          />
-        </div>
-        <div className="px-5 pb-6 sm:px-8">
-          <p className="kicker">Cebu · {SITE.location}</p>
-          <p className="mt-2 font-display text-2xl italic">{SITE.role}</p>
-        </div>
-      </Reveal>
 
       <div className="mt-16 grid gap-12 lg:grid-cols-12">
         <Reveal className="lg:col-span-7">
