@@ -133,14 +133,14 @@ export function AtelierCanvas() {
     const remnant = new THREE.Sprite(remnantMat);
     remnant.scale.set(3.55, 3.55, 1);
     const haloMat = new THREE.SpriteMaterial({
-      color: 0x8ec8ff,
+      color: 0xffffff,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       opacity: 0,
     });
     const halo = new THREE.Sprite(haloMat);
-    halo.scale.set(6.2, 6.2, 1);
+    halo.scale.set(4.55, 4.55, 1);
     const core = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: starTex,
@@ -181,13 +181,13 @@ export function AtelierCanvas() {
         void main() {
           vec2 p = vUv * 2.0 - 1.0;
           float r = length(p);
-          float ring = smoothstep(0.055, 0.0, abs(r - 0.73)) * (0.82 + 0.18 * sin(uTime * 0.65));
-          float inner = smoothstep(0.09, 0.0, abs(r - 0.56)) * 0.4;
-          float glow = exp(-r * 2.35) * 0.2;
-          vec3 col = vec3(1.0, 0.86, 0.58) * ring
-                   + vec3(1.0, 0.72, 0.38) * inner
-                   + vec3(0.92, 0.94, 1.0) * glow;
-          float a = ring * 0.92 + inner * 0.45 + glow;
+          float ring = smoothstep(0.04, 0.0, abs(r - 0.78)) * 0.35;
+          float inner = smoothstep(0.07, 0.0, abs(r - 0.52)) * 0.22;
+          float glow = exp(-r * 3.2) * 0.08;
+          vec3 col = vec3(1.0, 0.86, 0.58) * inner
+                   + vec3(0.45, 0.68, 1.0) * ring
+                   + vec3(1.0, 0.94, 0.82) * glow;
+          float a = ring * 0.55 + inner * 0.4 + glow;
           gl_FragColor = vec4(col, a);
         }
       `,
@@ -212,19 +212,19 @@ export function AtelierCanvas() {
           vec2 p = vUv * 2.0 - 1.0;
           float r = length(p);
           float a = atan(p.y, p.x);
-          float swirl = sin(a * 6.0 + r * 7.0 - uTime * 0.55);
-          float fil = pow(max(0.0, swirl), 2.4);
-          float shell = smoothstep(0.22, 0.42, r) * smoothstep(0.98, 0.55, r);
-          float wisps = pow(abs(sin(a * 4.0 + uTime * 0.35 + r * 3.0)), 6.0) * shell;
-          vec3 ice = vec3(0.55, 0.82, 1.0);
-          vec3 deep = vec3(0.28, 0.52, 0.95);
-          vec3 col = mix(ice, deep, fil);
-          float alpha = (shell * 0.42 + fil * shell * 0.5 + wisps * 0.35);
-          gl_FragColor = vec4(col, alpha);
+          float ragged = 0.78 + 0.05 * sin(a * 7.0 + uTime * 0.12) + 0.025 * sin(a * 17.0 - uTime * 0.08);
+          float rim = smoothstep(0.055, 0.0, abs(r - ragged));
+          float fil = pow(max(0.0, sin(a * 11.0 + r * 22.0 - uTime * 0.28)), 10.0);
+          float wisps = pow(abs(sin(a * 5.0 + r * 9.0 - uTime * 0.18)), 14.0);
+          float shell = rim * (0.45 + fil * 0.55 + wisps * 0.35);
+          vec3 ice = vec3(0.42, 0.72, 1.0);
+          vec3 violet = vec3(0.38, 0.32, 0.92);
+          vec3 col = mix(ice, violet, fil);
+          gl_FragColor = vec4(col, shell * 0.16);
         }
       `,
     });
-    const smoke = new THREE.Mesh(new THREE.CircleGeometry(4.35, 80), smokeMat);
+    const smoke = new THREE.Mesh(new THREE.CircleGeometry(3.95, 80), smokeMat);
     smoke.position.z = 0.05;
     nova.add(halo, remnant, smoke, ember, core, lens);
     scene.add(nova);
@@ -240,7 +240,8 @@ export function AtelierCanvas() {
       dustPos[i * 3 + 2] = Math.sin(a) * Math.cos(b) * rr * 0.7;
     }
     const dust = points(dustPos, 0.04, 0.55, starTex);
-    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xb5dcff);
+    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xc8d4e8);
+    (dust.mesh.material as THREE.PointsMaterial).opacity = 0.32;
     scene.add(dust.mesh);
 
     loader.load("/cosmos/remnant.png", (tex) => {
@@ -253,7 +254,7 @@ export function AtelierCanvas() {
     loader.load("/cosmos/halo.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       haloMat.map = tex;
-      haloMat.opacity = 0.7;
+      haloMat.opacity = 0.48;
       haloMat.needsUpdate = true;
     });
 
@@ -995,7 +996,7 @@ export function AtelierCanvas() {
       halo.material.rotation = -t * 0.018 * motion;
       const breathe = 1 + Math.sin(t * 0.7) * 0.015 * motion + pulse * 0.12;
       remnant.scale.set(3.45 * breathe, 3.45 * breathe, 1);
-      halo.scale.set(6.2 + pulse * 0.9 + state.novas * 0.12, 6.2 + pulse * 0.9 + state.novas * 0.12, 1);
+      halo.scale.set(4.55 + pulse * 0.35 + state.novas * 0.08, 4.55 + pulse * 0.35 + state.novas * 0.08, 1);
       core.scale.setScalar(0.5 + Math.sin(t * 2.2) * 0.06 + pulse * 0.5);
       ember.scale.setScalar(2.08 + Math.sin(t * 0.42) * 0.14);
       motes.mesh.rotation.y = t * 0.08 * motion;
