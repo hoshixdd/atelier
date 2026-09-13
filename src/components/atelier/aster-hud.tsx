@@ -24,7 +24,7 @@ export function AsterHud() {
         </>
       ) : (
         <p className="mt-2 text-[10px] leading-relaxed tracking-wide text-bone/70">
-          Join the bright stars at the corners. A name when a figure closes.
+          Tap a bright star, then another. Lines stay. A name when the figure closes.
         </p>
       )}
     </div>

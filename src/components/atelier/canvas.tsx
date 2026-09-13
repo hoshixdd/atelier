@@ -181,40 +181,7 @@ export function AtelierCanvas() {
       `,
     });
     const lens = new THREE.Mesh(new THREE.CircleGeometry(1.9, 72), lensMat);
-    const rayMat = new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
-      uniforms: { uTime: { value: 0 } },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        uniform float uTime;
-        void main() {
-          vec2 p = vUv * 2.0 - 1.0;
-          float a = atan(p.y, p.x);
-          float r = length(p);
-          float beams = pow(max(0.0, sin(a * 6.0 + uTime * 0.07)), 16.0);
-          beams += pow(max(0.0, sin(a * 3.5 - uTime * 0.045)), 22.0) * 0.55;
-          float fall = smoothstep(1.0, 0.1, r) * smoothstep(0.03, 0.16, r);
-          float dust = 0.62 + 0.38 * sin(r * 16.0 - uTime * 0.35);
-          vec3 col = mix(vec3(1.0, 0.84, 0.58), vec3(0.72, 0.86, 1.0), r);
-          gl_FragColor = vec4(col, beams * fall * dust * 0.2);
-        }
-      `,
-    });
-    const rays = new THREE.Mesh(new THREE.CircleGeometry(5.6, 80), rayMat);
-    rays.position.z = 0.1;
-    const raysSide = rays.clone();
-    raysSide.rotation.y = 0.72;
-    nova.add(halo, remnant, core, lens, rays, raysSide);
+    nova.add(halo, remnant, core, lens);
     scene.add(nova);
 
     const dustCount = isTouch ? 160 : 380;
@@ -855,10 +822,8 @@ export function AtelierCanvas() {
         lastStrike = state.strikeN;
       }
       lensMat.uniforms.uTime.value = t;
-      rayMat.uniforms.uTime.value = t;
       dust.mesh.rotation.y = t * 0.018 * motion;
       dust.mesh.rotation.z = Math.sin(t * 0.11) * 0.05;
-      rays.rotation.z = t * 0.012 * motion;
 
       const ambT = part === "night" ? 0.016 : part === "morning" ? 0.03 : part === "dusk" ? 0.024 : 0.028;
       const keyT = part === "night" ? 0.22 : part === "morning" ? 0.48 : part === "dusk" ? 0.36 : 0.42;
@@ -1164,8 +1129,6 @@ export function AtelierCanvas() {
       bindCapture(null);
       lensMat.dispose();
       lens.geometry.dispose();
-      rayMat.dispose();
-      rays.geometry.dispose();
       dust.geo.dispose();
       (dust.mesh.material as THREE.Material).dispose();
       asterLineGeo.dispose();

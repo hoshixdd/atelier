@@ -8,47 +8,59 @@ export type AsterFigure = {
   edges: [string, string][];
 };
 
-type Layout = {
-  id: string;
-  name: string;
-  kicker: string;
-  cx: number;
-  cy: number;
-  cz: number;
-  s: number;
-  pts: [number, number][];
-  edges: [number, number][];
-};
-
-const LAYOUTS: Layout[] = [
-  { id: "hoshi", name: "Hoshi", kicker: "The star", cx: -1.62, cy: -1.42, cz: 3.48, s: 0.3, pts: [[0, 0.55], [-0.55, 0.12], [-0.34, -0.48], [0.34, -0.48], [0.55, 0.12]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0]] },
-  { id: "cassiopeia", name: "Cassiopeia", kicker: "The W", cx: -1.58, cy: 1.55, cz: 3.42, s: 0.32, pts: [[-0.9, 0.18], [-0.42, -0.32], [0, 0.28], [0.42, -0.32], [0.9, 0.18]], edges: [[0, 1], [1, 2], [2, 3], [3, 4]] },
-  { id: "belt", name: "The Belt", kicker: "Three in a line", cx: -0.72, cy: -1.68, cz: 3.4, s: 0.3, pts: [[-0.7, 0], [0, 0.12], [0.7, 0]], edges: [[0, 1], [1, 2]] },
-  { id: "lyra", name: "Lyra", kicker: "The harp", cx: 1.58, cy: 1.55, cz: 3.42, s: 0.3, pts: [[0, 0.5], [-0.42, 0], [0.42, 0], [0, -0.48]], edges: [[0, 1], [0, 2], [1, 3], [2, 3]] },
-  { id: "cygnus", name: "Cygnus", kicker: "The swan", cx: 1.62, cy: 0.72, cz: 3.5, s: 0.3, pts: [[0, 0.55], [0, -0.05], [0, -0.52], [-0.55, 0.08], [0.55, 0.08]], edges: [[0, 1], [1, 2], [3, 1], [1, 4]] },
-  { id: "aquila", name: "Aquila", kicker: "The eagle", cx: 1.62, cy: -1.42, cz: 3.48, s: 0.3, pts: [[0, 0.48], [-0.5, -0.08], [0.5, -0.08], [0, -0.48]], edges: [[0, 1], [0, 2], [1, 3], [2, 3]] },
-  { id: "draco", name: "Draco", kicker: "The dragon", cx: -0.72, cy: 1.7, cz: 3.38, s: 0.3, pts: [[-0.7, 0.12], [-0.15, 0.38], [0.28, 0], [0.72, 0.28], [0.32, -0.38]], edges: [[0, 1], [1, 2], [2, 3], [2, 4]] },
-  { id: "andromeda", name: "Andromeda", kicker: "The chained", cx: 0.72, cy: -1.68, cz: 3.4, s: 0.3, pts: [[-0.65, 0.28], [-0.12, -0.08], [0.32, 0.3], [0.72, -0.28]], edges: [[0, 1], [1, 2], [2, 3]] },
+export const ASTER_NODES: AsterNode[] = [
+  { id: "c0", x: -1.55, y: 1.72, z: 3.35 },
+  { id: "c1", x: -0.72, y: 1.38, z: 3.42 },
+  { id: "c2", x: 0.05, y: 1.78, z: 3.32 },
+  { id: "c3", x: 0.78, y: 1.36, z: 3.4 },
+  { id: "c4", x: 1.58, y: 1.7, z: 3.34 },
+  { id: "b0", x: -0.7, y: -1.68, z: 3.38 },
+  { id: "b1", x: 0.05, y: -1.58, z: 3.32 },
+  { id: "b2", x: 0.82, y: -1.7, z: 3.38 },
+  { id: "h0", x: -1.58, y: 0.22, z: 3.45 },
+  { id: "h1", x: -1.88, y: -0.18, z: 3.5 },
+  { id: "h2", x: -1.68, y: -0.62, z: 3.46 },
+  { id: "h3", x: -1.22, y: -0.64, z: 3.4 },
+  { id: "h4", x: -1.08, y: -0.16, z: 3.38 },
 ];
 
-export const ASTER_NODES: AsterNode[] = [];
-export const ASTER_FIGURES: AsterFigure[] = [];
-
-for (const L of LAYOUTS) {
-  const nodeIds: string[] = [];
-  L.pts.forEach(([x, y], i) => {
-    const id = `${L.id}${i}`;
-    nodeIds.push(id);
-    ASTER_NODES.push({ id, x: L.cx + x * L.s, y: L.cy + y * L.s, z: L.cz });
-  });
-  ASTER_FIGURES.push({
-    id: L.id,
-    name: L.name,
-    kicker: L.kicker,
-    nodeIds,
-    edges: L.edges.map(([a, b]) => [nodeIds[a]!, nodeIds[b]!]),
-  });
-}
+export const ASTER_FIGURES: AsterFigure[] = [
+  {
+    id: "cassiopeia",
+    name: "Cassiopeia",
+    kicker: "The W",
+    nodeIds: ["c0", "c1", "c2", "c3", "c4"],
+    edges: [
+      ["c0", "c1"],
+      ["c1", "c2"],
+      ["c2", "c3"],
+      ["c3", "c4"],
+    ],
+  },
+  {
+    id: "belt",
+    name: "The Belt",
+    kicker: "Three in a line",
+    nodeIds: ["b0", "b1", "b2"],
+    edges: [
+      ["b0", "b1"],
+      ["b1", "b2"],
+    ],
+  },
+  {
+    id: "hoshi",
+    name: "Hoshi",
+    kicker: "The star",
+    nodeIds: ["h0", "h1", "h2", "h3", "h4"],
+    edges: [
+      ["h0", "h1"],
+      ["h1", "h2"],
+      ["h2", "h3"],
+      ["h3", "h4"],
+      ["h4", "h0"],
+    ],
+  },
+];
 
 export function edgeKey(a: string, b: string) {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
