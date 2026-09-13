@@ -271,14 +271,14 @@ input[type="range"] {
   text-transform: uppercase;
   color: #f4f1ea;
   text-shadow: 0 1px 2px #000, 0 0 18px rgba(0, 0, 0, 0.9);
-  animation: slug-in 1200ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation: slug-in 3000ms cubic-bezier(0.2, 0, 0, 1) both;
   text-align: center;
   width: min(90vw, 36rem);
 }
 @keyframes slug-in {
   0% { opacity: 0; letter-spacing: 0.6em; }
-  18% { opacity: 1; letter-spacing: 0.32em; }
-  70% { opacity: 1; }
+  12% { opacity: 1; letter-spacing: 0.32em; }
+  78% { opacity: 1; }
   100% { opacity: 0; }
 }
 

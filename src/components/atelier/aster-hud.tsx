@@ -7,22 +7,24 @@ export function AsterHud() {
   const entered = useAtelier((s) => s.entered);
   const intro = useAtelier((s) => s.introPlaying);
   if (!entered || intro || (mode !== "home" && mode !== "work")) return null;
+  const last = ASTER_FIGURES.find((f) => f.id === found[found.length - 1]);
   return (
-    <div className="pointer-events-none fixed top-[max(5.5rem,calc(env(safe-area-inset-top)+4.2rem))] left-5 z-20 md:left-8">
+    <div className="pointer-events-none fixed top-[max(5.5rem,calc(env(safe-area-inset-top)+4.2rem))] left-5 z-20 max-w-[14rem] md:left-8">
       <p className="kicker">
         Sky · {String(found.length).padStart(2, "0")} / {String(ASTER_FIGURES.length).padStart(2, "0")}
       </p>
-      {found.length > 0 ? (
-        <ul className="mt-2 space-y-1">
-          {ASTER_FIGURES.filter((f) => found.includes(f.id)).map((f) => (
-            <li key={f.id} className="font-display text-xl italic text-bone">
-              {f.name}
-            </li>
-          ))}
-        </ul>
+      {last ? (
+        <>
+          <p className="mt-2 font-display text-3xl italic leading-none">{last.name}</p>
+          <p className="mt-2 text-[10px] leading-relaxed tracking-wide text-bone/75">
+            {ASTER_FIGURES.filter((f) => found.includes(f.id))
+              .map((f) => f.name)
+              .join(" · ")}
+          </p>
+        </>
       ) : (
-        <p className="mt-2 max-w-[12rem] text-[10px] leading-relaxed tracking-wide text-bone/70">
-          Tap a bright star, then another. Lines stay. A name when the figure closes.
+        <p className="mt-2 text-[10px] leading-relaxed tracking-wide text-bone/70">
+          Join the bright stars around the belt. A name appears when a figure closes.
         </p>
       )}
     </div>

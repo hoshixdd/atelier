@@ -7,7 +7,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { cn } from "@/lib/utils";
 import { WORKS } from "@/lib/works";
 import { dayPart } from "@/lib/ceb";
-import { ASTER_FIGURES, ASTER_NODES, edgeKey, figureComplete } from "@/lib/constellations";
+import { ASTER_FIGURES, ASTER_NODES, edgeKey, figureCentroid, figureComplete } from "@/lib/constellations";
 import { fillBox, fillShell, fillSpiral, points, starSprite } from "@/lib/cosmos";
 import { bindCapture } from "@/lib/capture";
 import { flyToRoom } from "@/lib/director";
@@ -496,12 +496,12 @@ export function AtelierCanvas() {
         }),
       );
       spr.position.copy(pos);
-      spr.scale.setScalar(0.28);
+      spr.scale.setScalar(0.36);
       spr.userData.id = n.id;
       scene.add(spr);
       asterSprites.push(spr);
       const hit = new THREE.Mesh(
-        new THREE.SphereGeometry(0.22, 10, 8),
+        new THREE.SphereGeometry(0.4, 12, 10),
         new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
       );
       hit.position.copy(pos);
@@ -510,9 +510,10 @@ export function AtelierCanvas() {
       asterHits.push(hit);
     });
     const asterHave = new Set<string>();
+    const asterDone = new Set<string>();
     let asterPick: string | null = null;
     const asterLineGeo = new THREE.BufferGeometry();
-    const asterLinePos = new Float32Array(64 * 3);
+    const asterLinePos = new Float32Array(256 * 3);
     asterLineGeo.setAttribute("position", new THREE.BufferAttribute(asterLinePos, 3));
     const asterLines = new THREE.LineSegments(
       asterLineGeo,
@@ -540,6 +541,27 @@ export function AtelierCanvas() {
       asterLineGeo.setDrawRange(0, i / 3);
       asterLineGeo.attributes.position.needsUpdate = true;
     }
+    function nameSprite(text: string) {
+      const c = document.createElement("canvas");
+      c.width = 512;
+      c.height = 96;
+      const ctx = c.getContext("2d");
+      if (!ctx) return null;
+      ctx.clearRect(0, 0, 512, 96);
+      ctx.fillStyle = "rgba(244,241,234,0.95)";
+      ctx.font = "italic 42px 'Instrument Serif', serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(0,0,0,0.9)";
+      ctx.shadowBlur = 12;
+      ctx.fillText(text, 256, 48);
+      const tex = new THREE.CanvasTexture(c);
+      const spr = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.95 }),
+      );
+      spr.scale.set(1.35, 0.26, 1);
+      return spr;
+    }
     function connectAster(id: string, state: ReturnType<typeof useAtelier.getState>) {
       if (asterPick === id) {
         asterPick = null;
@@ -561,12 +583,19 @@ export function AtelierCanvas() {
         if (state.asterFound.includes(fig.id)) continue;
         if (!figureComplete(fig, asterHave)) continue;
         state.addAsterFound(fig.id);
+        fig.nodeIds.forEach((nid) => asterDone.add(nid));
+        const mid = figureCentroid(fig);
+        const label = nameSprite(fig.name);
+        if (label) {
+          label.position.set(mid.x, mid.y, mid.z);
+          scene.add(label);
+        }
         state.setSlugline(`${fig.kicker.toUpperCase()} — ${fig.name.toUpperCase()}`);
         window.setTimeout(() => {
           if (useAtelier.getState().slugline?.includes(fig.name.toUpperCase())) {
             useAtelier.getState().setSlugline(null);
           }
-        }, 2200);
+        }, 3200);
         sound.letter();
         pulse = Math.max(pulse, 0.7);
       }
@@ -641,6 +670,13 @@ export function AtelierCanvas() {
         if (next !== state.hoverLabel) state.setHoverLabel(next);
         return;
       }
+      if (state.sceneMode === "home" || state.sceneMode === "work") {
+        const starHover = raycaster.intersectObjects(asterHits, false);
+        if (starHover[0]) {
+          if (state.hoverLabel !== "Star") state.setHoverLabel("Star");
+          return;
+        }
+      }
       const named = raycaster.intersectObjects(hitPlanes, false);
       if (named[0]) {
         const title = named[0].object.userData.title as string | undefined;
@@ -650,11 +686,6 @@ export function AtelierCanvas() {
         return;
       }
       if (!state.isTouch && state.focusSlug) state.setFocusSlug(null);
-      const starHover = raycaster.intersectObjects(asterHits, false);
-      if (starHover[0] && (state.sceneMode === "home" || state.sceneMode === "work")) {
-        if (state.hoverLabel !== "Star") state.setHoverLabel("Star");
-        return;
-      }
       const unnamed = raycaster.intersectObjects(extraHits, false);
       const title = unnamed[0]?.object.userData.title as string | undefined;
       if (title !== state.hoverLabel) state.setHoverLabel(title ?? null);
@@ -698,6 +729,14 @@ export function AtelierCanvas() {
         }
         return;
       }
+      if (state.sceneMode === "home" || state.sceneMode === "work") {
+        const starHit = raycaster.intersectObjects(asterHits, false);
+        const starId = starHit[0]?.object.userData.id as string | undefined;
+        if (starId) {
+          connectAster(starId, state);
+          return;
+        }
+      }
       const hits = raycaster.intersectObjects(hitPlanes, false);
       const slug = hits[0]?.object.userData.slug as string | undefined;
       if (slug) {
@@ -710,12 +749,6 @@ export function AtelierCanvas() {
         return;
       }
       if (state.isTouch) state.setFocusSlug(null);
-      const starHit = raycaster.intersectObjects(asterHits, false);
-      const starId = starHit[0]?.object.userData.id as string | undefined;
-      if (starId && (state.sceneMode === "home" || state.sceneMode === "work")) {
-        connectAster(starId, state);
-        return;
-      }
       const secretHit = raycaster.intersectObjects(extraHits, false);
       const secret = secretHit[0]?.object.userData.secret as string | undefined;
       if (secret) {
@@ -1024,10 +1057,12 @@ export function AtelierCanvas() {
       }
 
       asterSprites.forEach((spr) => {
-        const on = spr.userData.id === asterPick;
-        const s = on ? 0.42 + Math.sin(t * 6) * 0.06 : 0.28;
+        const id = spr.userData.id as string;
+        const on = id === asterPick;
+        const done = asterDone.has(id);
+        const s = on ? 0.5 + Math.sin(t * 6) * 0.07 : done ? 0.4 : 0.36;
         spr.scale.setScalar(s);
-        (spr.material as THREE.SpriteMaterial).color.setHex(on ? 0xffe6b0 : 0xffffff);
+        (spr.material as THREE.SpriteMaterial).color.setHex(done ? 0xffd78a : on ? 0xffe6b0 : 0xffffff);
       });
       if (state.directorOn && frameN % 3 === 0) state.setCam(camera.position.z, camera.fov);
 
