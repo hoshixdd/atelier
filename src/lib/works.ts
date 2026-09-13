@@ -8,6 +8,7 @@ export type Work = {
   tags: string[];
   live?: string;
   repo?: string;
+  embed?: boolean;
   image: string;
   planet: string;
   detail: string;
@@ -54,6 +55,7 @@ export const WORKS: Work[] = [
     tags: ["WebGL", "Narrative", "Confession"],
     live: "https://didactic-giggle-nine.vercel.app",
     repo: "https://github.com/hoshixdd/didactic-giggle",
+    embed: true,
     image: "/works/infinity.jpg",
     planet: "/cosmos/planets/infinity.jpg",
     detail: "/works/infinity-detail.jpg",

@@ -5,7 +5,7 @@ import type { Work } from "@/lib/works";
 export function LivePortal({ work }: { work: Work }) {
   const [open, setOpen] = useState(false);
   const [blocked, setBlocked] = useState(false);
-  if (!work.live) return null;
+  if (!work.live || !work.embed) return null;
 
   return (
     <>
