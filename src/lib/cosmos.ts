@@ -78,3 +78,29 @@ export function points(
   });
   return { mesh: new THREE.Points(geo, mat), geo, mat };
 }
+
+export function fillDebris(
+  count: number,
+  r0: number,
+  r1: number,
+  flatten: number,
+  warp: number,
+  clumps: number,
+  arc = 1,
+) {
+  const pos: number[] = [];
+  let guard = 0;
+  while (pos.length / 3 < count && guard < count * 10) {
+    guard += 1;
+    const a = (Math.random() * Math.PI * 2 - Math.PI) * arc;
+    const bunch = 0.32 + 0.68 * Math.pow(Math.abs(Math.sin(a * clumps + 0.7)), 2.6);
+    if (Math.random() > bunch) continue;
+    const r = r0 + Math.random() * (r1 - r0);
+    pos.push(
+      Math.cos(a) * r,
+      Math.sin(a * 2.15) * warp + (Math.random() - 0.5) * 0.045,
+      Math.sin(a) * r * flatten,
+    );
+  }
+  return new Float32Array(pos);
+}

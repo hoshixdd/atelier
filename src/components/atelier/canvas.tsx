@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { WORKS } from "@/lib/works";
 import { dayPart } from "@/lib/ceb";
 import { ASTER_FIGURES, ASTER_NODES, edgeKey, figureCentroid, figureComplete } from "@/lib/constellations";
-import { fillBox, fillShell, fillSpiral, points, starSprite } from "@/lib/cosmos";
+import { fillBox, fillDebris, fillShell, fillSpiral, points, starSprite } from "@/lib/cosmos";
 import { bindCapture } from "@/lib/capture";
 import { flyToRoom } from "@/lib/director";
 import { sound } from "@/lib/sound";
@@ -123,93 +123,72 @@ export function AtelierCanvas() {
     const loader = new THREE.TextureLoader();
 
     const nova = new THREE.Group();
-    const galaxyMat = new THREE.SpriteMaterial({
+    const remnantMat = new THREE.SpriteMaterial({
+      color: 0xffe4c4,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      opacity: 0,
+    });
+    const remnant = new THREE.Sprite(remnantMat);
+    remnant.scale.set(3.5, 3.5, 1);
+
+    const farGalaxyMat = new THREE.SpriteMaterial({
       color: 0xffffff,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       opacity: 0,
     });
-    const galaxy = new THREE.Sprite(galaxyMat);
-    galaxy.scale.set(4.7, 4.7, 1);
-    const core = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: starTex,
-        color: 0xf4f8ff,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        opacity: 0.98,
-      }),
-    );
-    core.scale.set(0.95, 0.95, 1);
-    const bulge = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: starTex,
-        color: 0xc8dcff,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        opacity: 0.72,
-      }),
-    );
-    bulge.scale.set(1.85, 1.85, 1);
-    const flareMat = new THREE.SpriteMaterial({
-      color: 0xffffff,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      opacity: 0,
-    });
-    const flare = new THREE.Sprite(flareMat);
-    flare.scale.set(4.2, 0.62, 1);
-    const rings = new THREE.Group();
-    [1.22, 1.52, 1.88].forEach((rad, i) => {
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(rad, 0.007 + i * 0.002, 8, 140),
-        new THREE.MeshBasicMaterial({
-          color: 0xffe0a8,
-          transparent: true,
-          opacity: 0.38 - i * 0.08,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          side: THREE.DoubleSide,
-        }),
-      );
-      ring.rotation.x = Math.PI / 2.28;
-      ring.rotation.z = 0.16 * i;
-      rings.add(ring);
-    });
-    rings.rotation.z = 0.35;
-    nova.add(galaxy, rings, bulge, core, flare);
+    const farGalaxy = new THREE.Sprite(farGalaxyMat);
+    farGalaxy.scale.set(28, 28, 1);
+    farGalaxy.position.z = -11;
+
+    function debris(count: number, r0: number, r1: number, flatten: number, warp: number, clumps: number, hex: number, size: number, arc = 1) {
+      const pos = fillDebris(count, r0, r1, flatten, warp, clumps, arc);
+      const cloud = points(pos, size, 0.82, starTex);
+      (cloud.mesh.material as THREE.PointsMaterial).color.setHex(hex);
+      return cloud;
+    }
+    const innerDisk = debris(isTouch ? 420 : 980, 1.05, 1.48, 0.34, 0.08, 3, 0xffd9a0, 0.032);
+    const midStream = debris(isTouch ? 280 : 640, 1.62, 2.18, 0.4, 0.16, 2, 0xe8c9ff, 0.036);
+    const outerArc = debris(isTouch ? 180 : 420, 2.35, 3.05, 0.48, 0.28, 1.4, 0x9ec8ff, 0.04, 0.62);
+    innerDisk.mesh.rotation.x = 0.72;
+    midStream.mesh.rotation.x = 0.58;
+    midStream.mesh.rotation.z = 0.22;
+    outerArc.mesh.rotation.x = 1.05;
+    outerArc.mesh.rotation.z = -0.35;
+
+    nova.add(remnant, innerDisk.mesh, midStream.mesh, outerArc.mesh);
+    scene.add(farGalaxy);
     scene.add(nova);
 
-    const dustCount = isTouch ? 120 : 260;
+    const dustCount = isTouch ? 140 : 320;
     const dustPos = new Float32Array(dustCount * 3);
     for (let i = 0; i < dustCount; i++) {
       const a = Math.random() * Math.PI * 2;
-      const b = (Math.random() - 0.5) * 0.7;
-      const rr = 0.9 + Math.random() * 2.0;
+      const b = (Math.random() - 0.5) * 0.85;
+      const rr = 0.8 + Math.random() * 2.2;
       dustPos[i * 3] = Math.cos(a) * Math.cos(b) * rr;
-      dustPos[i * 3 + 1] = Math.sin(b) * rr * 0.35;
-      dustPos[i * 3 + 2] = Math.sin(a) * Math.cos(b) * rr * 0.55;
+      dustPos[i * 3 + 1] = Math.sin(b) * rr * 0.4;
+      dustPos[i * 3 + 2] = Math.sin(a) * Math.cos(b) * rr * 0.6;
     }
-    const dust = points(dustPos, 0.038, 0.45, starTex);
-    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xd8e8ff);
+    const dust = points(dustPos, 0.036, 0.4, starTex);
+    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xffe6c4);
     scene.add(dust.mesh);
 
-    loader.load("/cosmos/galaxy.png", (tex) => {
+    loader.load("/cosmos/remnant.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
-      galaxyMat.map = tex;
-      galaxyMat.opacity = 0.95;
-      galaxyMat.needsUpdate = true;
+      remnantMat.map = tex;
+      remnantMat.opacity = 0.96;
+      remnantMat.needsUpdate = true;
     });
-    loader.load("/cosmos/flare.png", (tex) => {
+    loader.load("/cosmos/galaxy.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
-      flareMat.map = tex;
-      flareMat.opacity = 0.55;
-      flareMat.needsUpdate = true;
+      farGalaxyMat.map = tex;
+      farGalaxyMat.opacity = 0.38;
+      farGalaxyMat.needsUpdate = true;
     });
 
     const far = points(
@@ -943,13 +922,13 @@ export function AtelierCanvas() {
       const ns =
         (0.85 + (target.novaScale - 0.85) * introEase) * state.star * (1 + pulse * 0.25) * novaMul;
       nova.scale.setScalar(nova.scale.x + (ns - nova.scale.x) * 0.06);
-      galaxy.material.rotation = t * 0.012 * motion;
-      rings.rotation.z = 0.35 + t * 0.01 * motion;
-      const breathe = 1 + Math.sin(t * 0.55) * 0.012 * motion + pulse * 0.08;
-      galaxy.scale.set(4.7 * breathe, 4.7 * breathe, 1);
-      core.scale.setScalar(0.88 + Math.sin(t * 1.8) * 0.06 + pulse * 0.35);
-      bulge.scale.setScalar(1.8 + Math.sin(t * 0.9) * 0.08);
-      flare.material.rotation = Math.sin(t * 0.2) * 0.04;
+      remnant.material.rotation = t * 0.018 * motion;
+      const breathe = 1 + Math.sin(t * 0.55) * 0.012 * motion + pulse * 0.1;
+      remnant.scale.set(3.5 * breathe, 3.5 * breathe, 1);
+      innerDisk.mesh.rotation.z = t * 0.055 * motion;
+      midStream.mesh.rotation.z = 0.22 + t * 0.028 * motion;
+      outerArc.mesh.rotation.z = -0.35 + t * 0.014 * motion;
+      farGalaxy.material.rotation = t * 0.004 * motion;
       motes.mesh.rotation.y = t * 0.08 * motion;
       motes.mesh.rotation.x = t * 0.03 * motion;
 
@@ -1134,15 +1113,16 @@ export function AtelierCanvas() {
       ro.disconnect();
       composer?.dispose();
       starTex.dispose();
-      galaxyMat.map?.dispose();
-      galaxyMat.dispose();
-      flareMat.map?.dispose();
-      flareMat.dispose();
-      rings.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (m.geometry) m.geometry.dispose();
-        if (m.material) (m.material as THREE.Material).dispose();
-      });
+      remnantMat.map?.dispose();
+      remnantMat.dispose();
+      farGalaxyMat.map?.dispose();
+      farGalaxyMat.dispose();
+      innerDisk.geo.dispose();
+      innerDisk.mat.dispose();
+      midStream.geo.dispose();
+      midStream.mat.dispose();
+      outerArc.geo.dispose();
+      outerArc.mat.dispose();
       far.geo.dispose();
       far.mat.dispose();
       mid.geo.dispose();
