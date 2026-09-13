@@ -96,16 +96,6 @@ export function Palette() {
         },
       },
       {
-        id: "word",
-        label: "Leave a word",
-        hint: "L",
-        keywords: "letter word sky satellite leave",
-        run: () => {
-          setPaletteOpen(false);
-          useAtelier.getState().setLeaveOpen(true);
-        },
-      },
-      {
         id: "gyro",
         label: "Tilt the sky",
         hint: "Phone",

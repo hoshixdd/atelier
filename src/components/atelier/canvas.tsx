@@ -7,6 +7,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { cn } from "@/lib/utils";
 import { WORKS } from "@/lib/works";
 import { dayPart } from "@/lib/ceb";
+import { ASTER_FIGURES, ASTER_NODES, edgeKey, figureComplete } from "@/lib/constellations";
 import { fillBox, fillShell, fillSpiral, points, starSprite } from "@/lib/cosmos";
 import { bindCapture } from "@/lib/capture";
 import { flyToRoom } from "@/lib/director";
@@ -478,47 +479,97 @@ export function AtelierCanvas() {
       return m;
     });
 
-    const wordGroup = new THREE.Group();
-    scene.add(wordGroup);
-    let wordSig = "";
-    const wordTex: THREE.CanvasTexture[] = [];
-    function syncWords(list: { word: string; a: number }[]) {
-      const sig = list.map((w) => w.word).join("|");
-      if (sig === wordSig) return;
-      wordSig = sig;
-      while (wordGroup.children.length) {
-        const child = wordGroup.children[0]!;
-        wordGroup.remove(child);
-      }
-      wordTex.forEach((t) => t.dispose());
-      wordTex.length = 0;
-      list.forEach((w, i) => {
-        const c = document.createElement("canvas");
-        c.width = 256;
-        c.height = 64;
-        const ctx = c.getContext("2d");
-        if (!ctx) return;
-        ctx.clearRect(0, 0, 256, 64);
-        ctx.fillStyle = "rgba(237,234,227,0.9)";
-        ctx.font = "500 28px Manrope, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(w.word, 128, 32);
-        const tex = new THREE.CanvasTexture(c);
-        wordTex.push(tex);
-        const spr = new THREE.Sprite(
-          new THREE.SpriteMaterial({
-            map: tex,
-            transparent: true,
-            depthWrite: false,
-            opacity: 0.72,
-          }),
-        );
-        spr.scale.set(0.9, 0.22, 1);
-        spr.userData.a = w.a;
-        spr.userData.i = i;
-        wordGroup.add(spr);
+    const asterHits: THREE.Mesh[] = [];
+    const asterSprites: THREE.Sprite[] = [];
+    const asterPos = new Map<string, THREE.Vector3>();
+    ASTER_NODES.forEach((n) => {
+      const pos = new THREE.Vector3(n.x, n.y, n.z);
+      asterPos.set(n.id, pos);
+      const spr = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: starTex,
+          color: 0xffffff,
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          opacity: 0.95,
+        }),
+      );
+      spr.position.copy(pos);
+      spr.scale.setScalar(0.28);
+      spr.userData.id = n.id;
+      scene.add(spr);
+      asterSprites.push(spr);
+      const hit = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 10, 8),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+      );
+      hit.position.copy(pos);
+      hit.userData.id = n.id;
+      scene.add(hit);
+      asterHits.push(hit);
+    });
+    const asterHave = new Set<string>();
+    let asterPick: string | null = null;
+    const asterLineGeo = new THREE.BufferGeometry();
+    const asterLinePos = new Float32Array(64 * 3);
+    asterLineGeo.setAttribute("position", new THREE.BufferAttribute(asterLinePos, 3));
+    const asterLines = new THREE.LineSegments(
+      asterLineGeo,
+      new THREE.LineBasicMaterial({
+        color: 0xe8f0ff,
+        transparent: true,
+        opacity: 0.85,
+      }),
+    );
+    scene.add(asterLines);
+    function rebuildAsterLines() {
+      let i = 0;
+      asterHave.forEach((key) => {
+        const [a, b] = key.split("|");
+        const pa = asterPos.get(a ?? "");
+        const pb = asterPos.get(b ?? "");
+        if (!pa || !pb || i + 6 > asterLinePos.length) return;
+        asterLinePos[i++] = pa.x;
+        asterLinePos[i++] = pa.y;
+        asterLinePos[i++] = pa.z;
+        asterLinePos[i++] = pb.x;
+        asterLinePos[i++] = pb.y;
+        asterLinePos[i++] = pb.z;
       });
+      asterLineGeo.setDrawRange(0, i / 3);
+      asterLineGeo.attributes.position.needsUpdate = true;
+    }
+    function connectAster(id: string, state: ReturnType<typeof useAtelier.getState>) {
+      if (asterPick === id) {
+        asterPick = null;
+        return;
+      }
+      if (!asterPick) {
+        asterPick = id;
+        sound.hover();
+        return;
+      }
+      const key = edgeKey(asterPick, id);
+      asterPick = id;
+      if (asterHave.has(key)) return;
+      asterHave.add(key);
+      rebuildAsterLines();
+      sound.click();
+      pulse = Math.max(pulse, 0.28);
+      for (const fig of ASTER_FIGURES) {
+        if (state.asterFound.includes(fig.id)) continue;
+        if (!figureComplete(fig, asterHave)) continue;
+        state.addAsterFound(fig.id);
+        state.setSlugline(`${fig.kicker.toUpperCase()} — ${fig.name.toUpperCase()}`);
+        window.setTimeout(() => {
+          if (useAtelier.getState().slugline?.includes(fig.name.toUpperCase())) {
+            useAtelier.getState().setSlugline(null);
+          }
+        }, 2200);
+        sound.letter();
+        pulse = Math.max(pulse, 0.7);
+      }
     }
 
     let lastStrike = 0;
@@ -599,6 +650,11 @@ export function AtelierCanvas() {
         return;
       }
       if (!state.isTouch && state.focusSlug) state.setFocusSlug(null);
+      const starHover = raycaster.intersectObjects(asterHits, false);
+      if (starHover[0] && (state.sceneMode === "home" || state.sceneMode === "work")) {
+        if (state.hoverLabel !== "Star") state.setHoverLabel("Star");
+        return;
+      }
       const unnamed = raycaster.intersectObjects(extraHits, false);
       const title = unnamed[0]?.object.userData.title as string | undefined;
       if (title !== state.hoverLabel) state.setHoverLabel(title ?? null);
@@ -654,6 +710,12 @@ export function AtelierCanvas() {
         return;
       }
       if (state.isTouch) state.setFocusSlug(null);
+      const starHit = raycaster.intersectObjects(asterHits, false);
+      const starId = starHit[0]?.object.userData.id as string | undefined;
+      if (starId && (state.sceneMode === "home" || state.sceneMode === "work")) {
+        connectAster(starId, state);
+        return;
+      }
       const secretHit = raycaster.intersectObjects(extraHits, false);
       const secret = secretHit[0]?.object.userData.secret as string | undefined;
       if (secret) {
@@ -961,13 +1023,13 @@ export function AtelierCanvas() {
         state.setLabels(next);
       }
 
-      if (frameN % 20 === 0) syncWords(state.skyWords);
-      if (state.directorOn && frameN % 3 === 0) state.setCam(camera.position.z, camera.fov);
-      wordGroup.children.forEach((spr) => {
-        const a = (spr.userData.a as number) + t * 0.07;
-        const r = 2.55 + (spr.userData.i as number) * 0.05;
-        spr.position.set(Math.cos(a) * r, Math.sin(a * 0.6) * 0.35, Math.sin(a) * r * 0.42);
+      asterSprites.forEach((spr) => {
+        const on = spr.userData.id === asterPick;
+        const s = on ? 0.42 + Math.sin(t * 6) * 0.06 : 0.28;
+        spr.scale.setScalar(s);
+        (spr.material as THREE.SpriteMaterial).color.setHex(on ? 0xffe6b0 : 0xffffff);
       });
+      if (state.directorOn && frameN % 3 === 0) state.setCam(camera.position.z, camera.fov);
 
       if (composer) composer.render();
       else renderer.render(scene, camera);
@@ -986,7 +1048,12 @@ export function AtelierCanvas() {
       bindCapture(null);
       lensMat.dispose();
       lens.geometry.dispose();
-      wordTex.forEach((tex) => tex.dispose());
+      asterLineGeo.dispose();
+      asterHits.forEach((m) => {
+        m.geometry.dispose();
+        (m.material as THREE.Material).dispose();
+      });
+      asterSprites.forEach((s) => (s.material as THREE.Material).dispose());
       ro.disconnect();
       composer?.dispose();
       starTex.dispose();

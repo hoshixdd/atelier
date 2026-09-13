@@ -3,7 +3,6 @@ import { useEffect, type ReactNode } from "react";
 import Lenis from "lenis";
 import { sound } from "@/lib/sound";
 import { cebHour, dayPart } from "@/lib/ceb";
-import { loadSkyWords } from "@/lib/letters";
 import { bindGoToWork } from "@/lib/director";
 import { loadDesk, useAtelier } from "@/store/atelier";
 import { AtelierCanvas } from "./canvas";
@@ -22,7 +21,7 @@ import { FlyShot, Letterbox, Slugline } from "./film";
 import { PlanetCard } from "./planet-card";
 import { DirectorHud } from "./director-hud";
 import { Keys } from "./keys";
-import { SkyWord } from "./sky-word";
+import { AsterHud } from "./aster-hud";
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -39,7 +38,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadDesk();
     sound.setDrone(useAtelier.getState().drone);
-    void loadSkyWords().then((w) => useAtelier.getState().setSkyWords(w));
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setReducedMotion(motion);
     setIsTouch(window.matchMedia("(pointer: coarse)").matches);
@@ -127,7 +125,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <Keys />
       <FlyShot />
       <PlanetCard />
-      <SkyWord />
+      <AsterHud />
       <Loader />
       <Nav />
       <Cursor />

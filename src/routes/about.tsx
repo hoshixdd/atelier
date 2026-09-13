@@ -29,13 +29,36 @@ function About() {
         </p>
       </Reveal>
 
-      <Reveal clip className="relative mt-12 min-h-[70vh] overflow-hidden bg-fog sm:min-h-[80vh]">
-        <img
-          src="/portrait/mirror-bw.jpg"
-          alt={`${SITE.person} in the mirror, Cebu`}
-          className="h-full w-full min-h-[70vh] object-cover object-top sm:min-h-[80vh]"
+      <section className="mt-14 grid gap-6 lg:grid-cols-12 lg:gap-8">
+        <Plate
+          src="/portrait/jacket.jpg"
+          alt={`${SITE.person}, looking into the room`}
+          caption="Looking in · the house"
+          className="lg:col-span-7 lg:row-span-2"
         />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-void via-void/50 to-transparent p-5 sm:p-8">
+        <Plate
+          src="/portrait/overhead.jpg"
+          alt={`${SITE.person} from above, a star on the cheek`}
+          caption="Looking down · a star"
+          className="lg:col-span-5"
+        />
+        <Plate
+          src="/portrait/bench.jpg"
+          alt={`${SITE.person} in the gym`}
+          caption="The gym · after"
+          className="lg:col-span-5"
+        />
+      </section>
+
+      <Reveal className="relative mt-6 bg-fog">
+        <div className="flex items-center justify-center p-4 sm:p-8">
+          <img
+            src="/portrait/mirror-bw.jpg"
+            alt={`${SITE.person} in the mirror, Cebu`}
+            className="max-h-[88vh] w-auto max-w-full object-contain"
+          />
+        </div>
+        <div className="px-5 pb-6 sm:px-8">
           <p className="kicker">Cebu · {SITE.location}</p>
           <p className="mt-2 font-display text-2xl italic">{SITE.role}</p>
         </div>
@@ -132,5 +155,28 @@ function About() {
         </ul>
       </section>
     </PageFrame>
+  );
+}
+
+function Plate({
+  src,
+  alt,
+  caption,
+  className,
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+  className?: string;
+}) {
+  return (
+    <Reveal className={className}>
+      <figure className="bg-fog">
+        <div className="flex items-center justify-center p-4 sm:p-6">
+          <img src={src} alt={alt} className="max-h-[78vh] w-auto max-w-full object-contain" />
+        </div>
+        <figcaption className="kicker px-4 pb-4 sm:px-6">{caption}</figcaption>
+      </figure>
+    </Reveal>
   );
 }

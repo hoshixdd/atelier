@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import type { SkyWord } from "@/lib/letters";
 
 export type SceneMode =
   | "home"
@@ -60,8 +59,7 @@ type AtelierState = {
   camZ: number;
   camFov: number;
   take: number;
-  leaveOpen: boolean;
-  skyWords: SkyWord[];
+  asterFound: string[];
   strikeN: number;
   setEntered: (v: boolean) => void;
   setIntroPlaying: (v: boolean) => void;
@@ -96,8 +94,7 @@ type AtelierState = {
   setGyroOn: (v: boolean) => void;
   setCam: (z: number, fov: number) => void;
   bumpTake: () => void;
-  setLeaveOpen: (v: boolean) => void;
-  setSkyWords: (w: SkyWord[]) => void;
+  addAsterFound: (id: string) => void;
   strike: () => void;
 };
 
@@ -138,8 +135,7 @@ export const useAtelier = create<AtelierState>((set) => ({
   camZ: 7.8,
   camFov: 42,
   take: 1,
-  leaveOpen: false,
-  skyWords: [],
+  asterFound: [],
   strikeN: 0,
   setEntered: (entered) => set({ entered }),
   setIntroPlaying: (introPlaying) => set({ introPlaying }),
@@ -191,8 +187,8 @@ export const useAtelier = create<AtelierState>((set) => ({
   setGyroOn: (gyroOn) => set({ gyroOn }),
   setCam: (camZ, camFov) => set({ camZ, camFov }),
   bumpTake: () => set((s) => ({ take: s.take + 1 })),
-  setLeaveOpen: (leaveOpen) => set({ leaveOpen }),
-  setSkyWords: (skyWords) => set({ skyWords }),
+  addAsterFound: (id) =>
+    set((s) => (s.asterFound.includes(id) ? s : { asterFound: [...s.asterFound, id] })),
   strike: () => set((s) => ({ strikeN: s.strikeN + 1 })),
 }));
 

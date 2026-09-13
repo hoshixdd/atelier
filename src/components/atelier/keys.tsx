@@ -16,8 +16,8 @@ export function Keys() {
   useEffect(() => {
     function down(e: KeyboardEvent) {
       if (typing(e) || e.metaKey || e.ctrlKey || e.altKey) return;
-      const { entered, paletteOpen, deskOpen, leaveOpen } = useAtelier.getState();
-      if (!entered || paletteOpen || deskOpen || leaveOpen) return;
+      const { entered, paletteOpen, deskOpen } = useAtelier.getState();
+      if (!entered || paletteOpen || deskOpen) return;
 
       if (e.key === "d" || e.key === "D") {
         useAtelier.getState().setDirectorOn(true);
@@ -30,11 +30,6 @@ export function Keys() {
           useAtelier.getState().setNotice(ok ? "Still saved" : "No frame");
           window.setTimeout(() => useAtelier.getState().setNotice(null), 1600);
         })();
-        return;
-      }
-      if (e.key === "l" || e.key === "L") {
-        e.preventDefault();
-        useAtelier.getState().setLeaveOpen(true);
         return;
       }
       const n = Number(e.key);
