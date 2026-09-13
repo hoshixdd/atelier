@@ -24,7 +24,7 @@ export function AsterHud() {
         </>
       ) : (
         <p className="mt-2 text-[10px] leading-relaxed tracking-wide text-bone/70">
-          Tap a bright star, then another. Hoshi is the pentagon around the worlds.
+          Hoshi is the pentagon hugging the three worlds — five stars, around, not the W.
         </p>
       )}
     </div>

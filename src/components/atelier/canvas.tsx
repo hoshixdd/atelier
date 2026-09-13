@@ -18,7 +18,7 @@ const MODE: Record<
   SceneMode,
   { z: number; fog: number; novaScale: number; frameR: number; frameOp: number }
 > = {
-  home: { z: 7.8, fog: 26, novaScale: 0.68, frameR: 2.55, frameOp: 1 },
+  home: { z: 7.8, fog: 26, novaScale: 0.88, frameR: 2.55, frameOp: 1 },
   work: { z: 8.0, fog: 24, novaScale: 0.62, frameR: 3.05, frameOp: 1 },
   room: { z: 6.6, fog: 22, novaScale: 0.55, frameR: 3.6, frameOp: 0.2 },
   lab: { z: 8.8, fog: 30, novaScale: 0.55, frameR: 3.8, frameOp: 0.25 },
@@ -107,7 +107,7 @@ export function AtelierCanvas() {
       key.shadow.bias = -0.0008;
     }
     scene.add(key);
-    const rim = new THREE.PointLight(0x7ec8e3, 6, 9, 2);
+    const rim = new THREE.PointLight(0x7ec8e3, 14, 12, 1.6);
     rim.position.set(0, 0, 0.2);
     scene.add(rim);
     const sun = new THREE.PointLight(0xfff1d0, 92, 16, 1.25);
@@ -131,16 +131,16 @@ export function AtelierCanvas() {
       opacity: 0,
     });
     const remnant = new THREE.Sprite(remnantMat);
-    remnant.scale.set(3.55, 3.55, 1);
+    remnant.scale.set(4.2, 4.2, 1);
     const haloMat = new THREE.SpriteMaterial({
-      color: 0xffd9a8,
+      color: 0x9ecfff,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       opacity: 0,
     });
     const halo = new THREE.Sprite(haloMat);
-    halo.scale.set(5.4, 5.4, 1);
+    halo.scale.set(7.4, 7.4, 1);
     const core = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: starTex,
@@ -181,20 +181,102 @@ export function AtelierCanvas() {
         void main() {
           vec2 p = vUv * 2.0 - 1.0;
           float r = length(p);
-          float ring = smoothstep(0.055, 0.0, abs(r - 0.73)) * (0.82 + 0.18 * sin(uTime * 0.65));
-          float inner = smoothstep(0.09, 0.0, abs(r - 0.56)) * 0.4;
-          float glow = exp(-r * 2.35) * 0.2;
-          vec3 col = vec3(1.0, 0.86, 0.58) * ring
-                   + vec3(1.0, 0.72, 0.38) * inner
-                   + vec3(1.0, 0.94, 0.82) * glow;
-          float a = ring * 0.92 + inner * 0.45 + glow;
+          float ring = smoothstep(0.04, 0.0, abs(r - (0.42 + 0.28 * fract(uTime * 0.12)))) * 0.9;
+          float ring2 = smoothstep(0.035, 0.0, abs(r - (0.18 + 0.55 * fract(uTime * 0.12 + 0.45)))) * 0.7;
+          float inner = smoothstep(0.12, 0.0, abs(r - 0.22)) * (0.55 + 0.45 * sin(uTime * 3.4));
+          float glow = exp(-r * 1.65) * (0.45 + 0.25 * sin(uTime * 1.8));
+          vec3 gold = vec3(1.0, 0.86, 0.55);
+          vec3 ice = vec3(0.45, 0.78, 1.0);
+          vec3 col = gold * inner + mix(gold, ice, r) * ring + ice * ring2 + mix(gold, ice, 0.45) * glow;
+          float a = inner * 0.7 + ring * 0.85 + ring2 * 0.65 + glow;
           gl_FragColor = vec4(col, a);
         }
       `,
     });
-    const lens = new THREE.Mesh(new THREE.CircleGeometry(1.9, 72), lensMat);
-    nova.add(halo, remnant, ember, core, lens);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(2.6, 80), lensMat);
+    const plasmaMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uTime: { value: 0 }, uRoar: { value: 1 } },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform float uTime;
+        uniform float uRoar;
+        void main() {
+          vec2 p = vUv * 2.0 - 1.0;
+          float r = length(p);
+          float a = atan(p.y, p.x);
+          float n = sin(a * 5.0 + uTime * 1.6) * 0.5;
+          n += sin(a * 11.0 - uTime * 2.4 + r * 9.0) * 0.28;
+          n += sin(r * 16.0 - uTime * 3.6) * 0.22;
+          float fil = pow(max(0.0, n), 1.6);
+          float tendril = pow(abs(sin(a * 7.0 + r * 5.0 - uTime * 1.9)), 10.0) * smoothstep(1.0, 0.15, r);
+          float veil = exp(-r * 1.35) * (0.5 + 0.5 * fil);
+          vec3 hot = vec3(1.0, 0.9, 0.7);
+          vec3 ice = vec3(0.42, 0.78, 1.0);
+          vec3 deep = vec3(0.18, 0.42, 0.95);
+          vec3 col = mix(hot, ice, smoothstep(0.12, 0.55, r));
+          col = mix(col, deep, smoothstep(0.4, 1.05, r) * (0.4 + fil));
+          float alpha = (veil * 0.95 + tendril * 0.55) * (0.75 + uRoar * 0.55);
+          alpha *= smoothstep(1.12, 0.28, r);
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+    });
+    const plasma = new THREE.Mesh(new THREE.CircleGeometry(5.2, 96), plasmaMat);
+    plasma.position.z = 0.04;
+    const shockMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uR: { value: 0.2 } },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform float uR;
+        void main() {
+          vec2 p = vUv * 2.0 - 1.0;
+          float r = length(p);
+          float ring = smoothstep(0.045, 0.0, abs(r - uR)) * (1.0 - uR);
+          vec3 col = mix(vec3(1.0, 0.92, 0.75), vec3(0.4, 0.78, 1.0), uR);
+          gl_FragColor = vec4(col, ring * 0.7);
+        }
+      `,
+    });
+    const shocks = [0, 1, 2].map((i) => {
+      const m = new THREE.Mesh(new THREE.CircleGeometry(5.6, 72), shockMat.clone());
+      m.userData.phase = i / 3;
+      m.position.z = 0.06;
+      return m;
+    });
+    nova.add(halo, plasma, remnant, ember, core, lens, ...shocks);
     scene.add(nova);
+
+    const ejCount = isTouch ? 90 : 220;
+    const ejPos = new Float32Array(ejCount * 3);
+    const ejSeed = Array.from({ length: ejCount }, () => ({
+      a: Math.random() * Math.PI * 2,
+      b: (Math.random() - 0.5) * 1.1,
+      s: 0.6 + Math.random() * 2.8,
+      p: Math.random(),
+    }));
+    const ejecta = points(ejPos, 0.055, 0.85, starTex);
+    (ejecta.mesh.material as THREE.PointsMaterial).color.setHex(0xb7e4ff);
+    scene.add(ejecta.mesh);
 
     const dustCount = isTouch ? 160 : 380;
     const dustPos = new Float32Array(dustCount * 3);
@@ -207,21 +289,21 @@ export function AtelierCanvas() {
       dustPos[i * 3 + 2] = Math.sin(a) * Math.cos(b) * rr * 0.72;
     }
     const dust = points(dustPos, 0.042, 0.62, starTex);
-    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xffe4c0);
-    (dust.mesh.material as THREE.PointsMaterial).opacity = 0.7;
+    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xc8e6ff);
+    (dust.mesh.material as THREE.PointsMaterial).opacity = 0.78;
     scene.add(dust.mesh);
 
     loader.load("/cosmos/remnant.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
       remnantMat.map = tex;
-      remnantMat.opacity = 0.92;
+      remnantMat.opacity = 0.95;
       remnantMat.needsUpdate = true;
     });
     loader.load("/cosmos/halo.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       haloMat.map = tex;
-      haloMat.opacity = 0.42;
+      haloMat.opacity = 0.72;
       haloMat.needsUpdate = true;
     });
 
@@ -660,7 +742,7 @@ export function AtelierCanvas() {
     if (useBloom) {
       composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
-      bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.36, 0.42, 0.22);
+      bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.52, 0.62, 0.16);
       composer.addPass(bloomPass);
       composer.addPass(new OutputPass());
     }
@@ -852,22 +934,6 @@ export function AtelierCanvas() {
         lastStrike = state.strikeN;
       }
       lensMat.uniforms.uTime.value = t;
-      dust.mesh.rotation.y = t * 0.018 * motion;
-      dust.mesh.rotation.z = Math.sin(t * 0.11) * 0.05;
-      far.mesh.rotation.y = t * 0.003 * motion;
-      mid.mesh.rotation.y = t * 0.007 * motion;
-      milky.mesh.rotation.y = t * 0.004 * motion;
-      const pulseCore = 0.68 + Math.sin(t * 0.7) * 0.07 + pulse * 0.12;
-      core.scale.setScalar(pulseCore);
-      ember.scale.setScalar(2.08 + Math.sin(t * 0.42) * 0.14);
-
-      const ambT = part === "night" ? 0.016 : part === "morning" ? 0.03 : part === "dusk" ? 0.024 : 0.028;
-      const keyT = part === "night" ? 0.22 : part === "morning" ? 0.48 : part === "dusk" ? 0.36 : 0.42;
-      ambient.intensity += (ambT - ambient.intensity) * 0.04;
-      key.intensity += (keyT - key.intensity) * 0.04;
-      sun.color.setHex(part === "night" ? 0xffe8d2 : part === "dusk" ? 0xffc090 : 0xfff1d0);
-      key.color.setHex(part === "night" ? 0xc8b8a0 : part === "morning" ? 0xffd4a8 : part === "dusk" ? 0xffb078 : 0xffe8c8);
-
       if (state.entered && introT0 === 0) introT0 = performance.now();
       const introK = !state.entered
         ? 0
@@ -875,6 +941,30 @@ export function AtelierCanvas() {
           ? 1
           : Math.min(1, (performance.now() - introT0) / 5200);
       const introEase = 1 - Math.pow(1 - introK, 3);
+      const roar = !state.entered ? 1 : Math.max(0, 1 - introEase);
+      pulse = Math.max(pulse, roar * 0.9);
+      plasmaMat.uniforms.uTime.value = t;
+      plasmaMat.uniforms.uRoar.value = roar;
+      shocks.forEach((m) => {
+        const mat = m.material as THREE.ShaderMaterial;
+        mat.uniforms.uR.value = (t * 0.13 + m.userData.phase) % 1;
+      });
+      ejSeed.forEach((s, i) => {
+        const k = ((t * 0.22 + s.p) % 1) * s.s * (1.1 + roar * 1.6);
+        ejPos[i * 3] = Math.cos(s.a) * Math.cos(s.b) * k;
+        ejPos[i * 3 + 1] = Math.sin(s.b) * k * 0.62;
+        ejPos[i * 3 + 2] = Math.sin(s.a) * Math.cos(s.b) * k * 0.7;
+      });
+      ejecta.geo.attributes.position.needsUpdate = true;
+      dust.mesh.rotation.y = t * 0.03 * motion;
+      dust.mesh.rotation.z = Math.sin(t * 0.2) * 0.08;
+
+      const ambT = part === "night" ? 0.016 : part === "morning" ? 0.03 : part === "dusk" ? 0.024 : 0.028;
+      const keyT = part === "night" ? 0.22 : part === "morning" ? 0.48 : part === "dusk" ? 0.36 : 0.42;
+      ambient.intensity += (ambT - ambient.intensity) * 0.04;
+      key.intensity += (keyT - key.intensity) * 0.04;
+      sun.color.setHex(part === "night" ? 0xffe8d2 : part === "dusk" ? 0xffc090 : 0xfff1d0);
+      key.color.setHex(part === "night" ? 0xc8b8a0 : part === "morning" ? 0xffd4a8 : part === "dusk" ? 0xffb078 : 0xffe8c8);
 
       if (playing) {
         fov.v += (50 - fov.v) * 0.05;
@@ -961,15 +1051,18 @@ export function AtelierCanvas() {
 
       const world = state.workSlug ? WORLD[state.workSlug] : null;
       const novaMul = (world?.nova ?? 1) * (state.novas > 0 ? 1.08 : 1);
+      const eat = !state.entered ? 2.15 : 1.35 - introEase * 0.35;
       const ns =
-        (0.85 + (target.novaScale - 0.85) * introEase) * state.star * (1 + pulse * 0.25) * novaMul;
-      nova.scale.setScalar(nova.scale.x + (ns - nova.scale.x) * 0.06);
-      remnant.material.rotation = t * 0.03 * motion;
-      halo.material.rotation = -t * 0.018 * motion;
-      const breathe = 1 + Math.sin(t * 0.7) * 0.015 * motion + pulse * 0.12;
-      remnant.scale.set(3.45 * breathe, 3.45 * breathe, 1);
-      halo.scale.set(5.1 + pulse * 1.4 + state.novas * 0.12, 5.1 + pulse * 1.4 + state.novas * 0.12, 1);
-      core.scale.setScalar(0.5 + Math.sin(t * 2.2) * 0.06 + pulse * 0.5);
+        (0.95 + (target.novaScale - 0.95) * introEase) * state.star * (1 + pulse * 0.45) * novaMul * eat;
+      nova.scale.setScalar(nova.scale.x + (ns - nova.scale.x) * 0.07);
+      remnant.material.rotation = t * 0.045 * motion;
+      halo.material.rotation = -t * 0.028 * motion;
+      plasma.rotation.z = t * 0.08 * motion;
+      const breathe = 1 + Math.sin(t * 1.15) * 0.04 * motion + pulse * 0.22;
+      remnant.scale.set(4.35 * breathe, 4.35 * breathe, 1);
+      halo.scale.set(7.6 + pulse * 2.4 + state.novas * 0.18, 7.6 + pulse * 2.4 + state.novas * 0.18, 1);
+      core.scale.setScalar(0.82 + Math.sin(t * 3.4) * 0.14 + pulse * 0.85);
+      ember.scale.setScalar(2.4 + Math.sin(t * 1.1) * 0.22 + pulse * 0.5);
       motes.mesh.rotation.y = t * 0.08 * motion;
       motes.mesh.rotation.x = t * 0.03 * motion;
 
@@ -1122,7 +1215,9 @@ export function AtelierCanvas() {
         const done = asterDone.has(id);
         const s = on ? 0.68 + Math.sin(t * 6) * 0.08 : done ? 0.58 : 0.52;
         spr.scale.setScalar(s);
-        (spr.material as THREE.SpriteMaterial).color.setHex(done ? 0xffd78a : on ? 0xffe6b0 : 0xfff4dc);
+        (spr.material as THREE.SpriteMaterial).color.setHex(
+          done ? 0xffd78a : on ? 0xffe6b0 : id.startsWith("h") ? 0xd4eeff : 0xfff4dc,
+        );
       });
       if (state.directorOn && frameN % 3 === 0) state.setCam(camera.position.z, camera.fov);
 
@@ -1158,6 +1253,14 @@ export function AtelierCanvas() {
       remnantMat.dispose();
       haloMat.map?.dispose();
       haloMat.dispose();
+      plasmaMat.dispose();
+      plasma.geometry.dispose();
+      shocks.forEach((m) => {
+        (m.material as THREE.Material).dispose();
+        m.geometry.dispose();
+      });
+      ejecta.geo.dispose();
+      (ejecta.mesh.material as THREE.Material).dispose();
       far.geo.dispose();
       far.mat.dispose();
       mid.geo.dispose();
