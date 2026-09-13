@@ -12,7 +12,7 @@ const VEIL: Record<string, string> = {
 };
 
 const CEB: Record<string, string> = {
-  night: "radial-gradient(ellipse 80% 70% at 50% 40%, rgba(40,70,140,0.16), transparent 70%)",
+  night: "radial-gradient(ellipse 80% 70% at 50% 40%, rgba(40,28,16,0.18), transparent 70%)",
   morning: "radial-gradient(ellipse 80% 70% at 50% 18%, rgba(255,200,140,0.14), transparent 68%)",
   day: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,244,220,0.08), transparent 60%)",
   dusk: "radial-gradient(ellipse 80% 70% at 50% 70%, rgba(255,120,60,0.14), transparent 68%)",

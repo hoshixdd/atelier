@@ -76,7 +76,7 @@ export function AtelierCanvas() {
       powerPreference: "high-performance",
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x08070a, 1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     if (!isTouch) {
       renderer.shadowMap.enabled = true;
@@ -84,7 +84,7 @@ export function AtelierCanvas() {
     }
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x050506, 0.012);
+    scene.fog = new THREE.FogExp2(0x08070a, 0.01);
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160);
     camera.position.set(0, 0, 0.9);
@@ -124,33 +124,45 @@ export function AtelierCanvas() {
 
     const nova = new THREE.Group();
     const remnantMat = new THREE.SpriteMaterial({
-      color: 0xffffff,
+      color: 0xffe8c8,
       transparent: true,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
       opacity: 0,
     });
     const remnant = new THREE.Sprite(remnantMat);
-    remnant.scale.set(3.45, 3.45, 1);
+    remnant.scale.set(3.55, 3.55, 1);
     const haloMat = new THREE.SpriteMaterial({
-      color: 0xffffff,
+      color: 0xffd9a8,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       opacity: 0,
     });
     const halo = new THREE.Sprite(haloMat);
-    halo.scale.set(5.1, 5.1, 1);
+    halo.scale.set(5.4, 5.4, 1);
     const core = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: starTex,
-        color: 0xfff6e8,
+        color: 0xfff1d6,
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
-        opacity: 0.95,
+        opacity: 0.98,
       }),
     );
-    core.scale.set(0.55, 0.55, 1);
+    core.scale.set(0.72, 0.72, 1);
+    const ember = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: starTex,
+        color: 0xffc070,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        opacity: 0.9,
+      }),
+    );
+    ember.scale.set(2.15, 2.15, 1);
     const lensMat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -172,16 +184,16 @@ export function AtelierCanvas() {
           float ring = smoothstep(0.055, 0.0, abs(r - 0.73)) * (0.82 + 0.18 * sin(uTime * 0.65));
           float inner = smoothstep(0.09, 0.0, abs(r - 0.56)) * 0.4;
           float glow = exp(-r * 2.35) * 0.2;
-          vec3 col = vec3(0.7, 0.86, 1.0) * ring
-                   + vec3(1.0, 0.76, 0.5) * inner
-                   + vec3(0.92, 0.94, 1.0) * glow;
+          vec3 col = vec3(1.0, 0.86, 0.58) * ring
+                   + vec3(1.0, 0.72, 0.38) * inner
+                   + vec3(1.0, 0.94, 0.82) * glow;
           float a = ring * 0.92 + inner * 0.45 + glow;
           gl_FragColor = vec4(col, a);
         }
       `,
     });
     const lens = new THREE.Mesh(new THREE.CircleGeometry(1.9, 72), lensMat);
-    nova.add(halo, remnant, core, lens);
+    nova.add(halo, remnant, ember, core, lens);
     scene.add(nova);
 
     const dustCount = isTouch ? 160 : 380;
@@ -203,13 +215,13 @@ export function AtelierCanvas() {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
       remnantMat.map = tex;
-      remnantMat.opacity = 1;
+      remnantMat.opacity = 0.92;
       remnantMat.needsUpdate = true;
     });
     loader.load("/cosmos/halo.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       haloMat.map = tex;
-      haloMat.opacity = 0.55;
+      haloMat.opacity = 0.42;
       haloMat.needsUpdate = true;
     });
 
@@ -265,6 +277,35 @@ export function AtelierCanvas() {
     scene.add(meteor);
     const meteorState = { t: 5, active: 0, ax: 0, ay: 0, az: 0, bx: 0, by: 0, bz: 0 };
 
+    function atmosMat(color: number, op: number) {
+      return new THREE.ShaderMaterial({
+        uniforms: {
+          uColor: { value: new THREE.Color(color) },
+          uOp: { value: op },
+        },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        vertexShader: `
+          varying float vF;
+          void main() {
+            vec3 n = normalize(normalMatrix * normal);
+            vec3 v = normalize(-(modelViewMatrix * vec4(position, 1.0)).xyz);
+            vF = pow(1.0 - abs(dot(n, v)), 2.7);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uColor;
+          uniform float uOp;
+          varying float vF;
+          void main() {
+            gl_FragColor = vec4(uColor, vF * uOp);
+          }
+        `,
+      });
+    }
     const frames: THREE.Group[] = [];
     const planetBodies: THREE.Mesh[] = [];
     const sphereGeoCache = new Map<number, THREE.SphereGeometry>();
@@ -280,7 +321,7 @@ export function AtelierCanvas() {
       g.rotation.z = look.tilt;
       let bodyGeo = sphereGeoCache.get(look.radius);
       if (!bodyGeo) {
-        bodyGeo = new THREE.SphereGeometry(look.radius, 48, 32);
+        bodyGeo = new THREE.SphereGeometry(look.radius, 64, 48);
         sphereGeoCache.set(look.radius, bodyGeo);
       }
       const body = new THREE.Mesh(
@@ -306,15 +347,8 @@ export function AtelierCanvas() {
       hit.userData.slug = work.slug;
       hit.userData.title = work.title;
       const atmos = new THREE.Mesh(
-        new THREE.SphereGeometry(look.radius * 1.12, 32, 24),
-        new THREE.MeshBasicMaterial({
-          color: look.atmos,
-          transparent: true,
-          opacity: 0.22,
-          side: THREE.BackSide,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-        }),
+        new THREE.SphereGeometry(look.radius * 1.14, 40, 28),
+        atmosMat(look.atmos, 0.55),
       );
       g.add(body, atmos, hit);
       if (look.rings) {
@@ -378,15 +412,8 @@ export function AtelierCanvas() {
       if (d.atmos) {
         g.add(
           new THREE.Mesh(
-            new THREE.SphereGeometry(d.radius * 1.14, 24, 16),
-            new THREE.MeshBasicMaterial({
-              color: d.atmos,
-              transparent: true,
-              opacity: 0.2,
-              side: THREE.BackSide,
-              depthWrite: false,
-              blending: THREE.AdditiveBlending,
-            }),
+            new THREE.SphereGeometry(d.radius * 1.16, 28, 20),
+            atmosMat(d.atmos, 0.5),
           ),
         );
       }
@@ -505,15 +532,17 @@ export function AtelierCanvas() {
       const spr = new THREE.Sprite(
         new THREE.SpriteMaterial({
           map: starTex,
-          color: 0xffffff,
+          color: 0xfff4dc,
           transparent: true,
+          depthTest: false,
           depthWrite: false,
           blending: THREE.AdditiveBlending,
-          opacity: 0.95,
+          opacity: 1,
         }),
       );
       spr.position.copy(pos);
-      spr.scale.setScalar(0.36);
+      spr.scale.setScalar(0.55);
+      spr.renderOrder = 4;
       spr.userData.id = n.id;
       scene.add(spr);
       asterSprites.push(spr);
@@ -535,11 +564,13 @@ export function AtelierCanvas() {
     const asterLines = new THREE.LineSegments(
       asterLineGeo,
       new THREE.LineBasicMaterial({
-        color: 0xe8f0ff,
+        color: 0xfff0d4,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.92,
+        depthTest: false,
       }),
     );
+    asterLines.renderOrder = 3;
     scene.add(asterLines);
     function rebuildAsterLines() {
       let i = 0;
@@ -623,14 +654,13 @@ export function AtelierCanvas() {
     }
 
     let lastStrike = 0;
-    let hoshiQueued = false;
 
     let composer: EffectComposer | null = null;
     let bloomPass: UnrealBloomPass | null = null;
     if (useBloom) {
       composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
-      bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.28, 0.5, 0.28);
+      bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.36, 0.42, 0.22);
       composer.addPass(bloomPass);
       composer.addPass(new OutputPass());
     }
@@ -824,13 +854,19 @@ export function AtelierCanvas() {
       lensMat.uniforms.uTime.value = t;
       dust.mesh.rotation.y = t * 0.018 * motion;
       dust.mesh.rotation.z = Math.sin(t * 0.11) * 0.05;
+      far.mesh.rotation.y = t * 0.003 * motion;
+      mid.mesh.rotation.y = t * 0.007 * motion;
+      milky.mesh.rotation.y = t * 0.004 * motion;
+      const pulseCore = 0.68 + Math.sin(t * 0.7) * 0.07 + pulse * 0.12;
+      core.scale.setScalar(pulseCore);
+      ember.scale.setScalar(2.08 + Math.sin(t * 0.42) * 0.14);
 
       const ambT = part === "night" ? 0.016 : part === "morning" ? 0.03 : part === "dusk" ? 0.024 : 0.028;
       const keyT = part === "night" ? 0.22 : part === "morning" ? 0.48 : part === "dusk" ? 0.36 : 0.42;
       ambient.intensity += (ambT - ambient.intensity) * 0.04;
       key.intensity += (keyT - key.intensity) * 0.04;
-      key.color.setHex(part === "night" ? 0x8aa6cc : part === "morning" ? 0xffd4a8 : part === "dusk" ? 0xffb078 : 0xffe8c8);
-      sun.color.setHex(part === "night" ? 0xc8d8ff : part === "dusk" ? 0xffc090 : 0xfff1d0);
+      sun.color.setHex(part === "night" ? 0xffe8d2 : part === "dusk" ? 0xffc090 : 0xfff1d0);
+      key.color.setHex(part === "night" ? 0xc8b8a0 : part === "morning" ? 0xffd4a8 : part === "dusk" ? 0xffb078 : 0xffe8c8);
 
       if (state.entered && introT0 === 0) introT0 = performance.now();
       const introK = !state.entered
@@ -839,28 +875,6 @@ export function AtelierCanvas() {
           ? 1
           : Math.min(1, (performance.now() - introT0) / 5200);
       const introEase = 1 - Math.pow(1 - introK, 3);
-
-      if (!hoshiQueued && state.entered && !state.introPlaying) {
-        hoshiQueued = true;
-        const fig = ASTER_FIGURES.find((f) => f.id === "hoshi");
-        if (fig && !state.asterFound.includes("hoshi")) {
-          if (reduced || state.reducedMotion) {
-            fig.edges.forEach(([a, b]) => asterHave.add(edgeKey(a, b)));
-            rebuildAsterLines();
-            markFound(fig, state);
-          } else {
-            fig.edges.forEach(([a, b], i) => {
-              window.setTimeout(() => {
-                asterHave.add(edgeKey(a, b));
-                rebuildAsterLines();
-                sound.hover();
-                pulse = Math.max(pulse, 0.22);
-                if (i === fig.edges.length - 1) markFound(fig, useAtelier.getState());
-              }, 480 + i * 340);
-            });
-          }
-        }
-      }
 
       if (playing) {
         fov.v += (50 - fov.v) * 0.05;
@@ -1106,9 +1120,9 @@ export function AtelierCanvas() {
         const id = spr.userData.id as string;
         const on = id === asterPick;
         const done = asterDone.has(id);
-        const s = on ? 0.5 + Math.sin(t * 6) * 0.07 : done ? 0.4 : 0.36;
+        const s = on ? 0.68 + Math.sin(t * 6) * 0.08 : done ? 0.58 : 0.52;
         spr.scale.setScalar(s);
-        (spr.material as THREE.SpriteMaterial).color.setHex(done ? 0xffd78a : on ? 0xffe6b0 : 0xffffff);
+        (spr.material as THREE.SpriteMaterial).color.setHex(done ? 0xffd78a : on ? 0xffe6b0 : 0xfff4dc);
       });
       if (state.directorOn && frameN % 3 === 0) state.setCam(camera.position.z, camera.fov);
 

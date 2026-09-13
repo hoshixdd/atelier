@@ -8,20 +8,31 @@ export type AsterFigure = {
   edges: [string, string][];
 };
 
+const R = 3.12;
+const SQUASH = 0.78;
+const HOSHI_Z = 0.92;
+const ROT = Math.PI / 5;
+
+const hoshi: AsterNode[] = Array.from({ length: 5 }, (_, i) => {
+  const a = -Math.PI / 2 + ROT + (i * Math.PI * 2) / 5;
+  return {
+    id: `h${i}`,
+    x: Math.cos(a) * R,
+    y: Math.sin(a) * R * SQUASH,
+    z: HOSHI_Z,
+  };
+});
+
 export const ASTER_NODES: AsterNode[] = [
-  { id: "c0", x: -1.55, y: 1.72, z: 3.35 },
-  { id: "c1", x: -0.72, y: 1.38, z: 3.42 },
-  { id: "c2", x: 0.05, y: 1.78, z: 3.32 },
-  { id: "c3", x: 0.78, y: 1.36, z: 3.4 },
-  { id: "c4", x: 1.58, y: 1.7, z: 3.34 },
-  { id: "b0", x: -0.7, y: -1.68, z: 3.38 },
-  { id: "b1", x: 0.05, y: -1.58, z: 3.32 },
-  { id: "b2", x: 0.82, y: -1.7, z: 3.38 },
-  { id: "h0", x: -1.58, y: 0.22, z: 3.45 },
-  { id: "h1", x: -1.88, y: -0.18, z: 3.5 },
-  { id: "h2", x: -1.68, y: -0.62, z: 3.46 },
-  { id: "h3", x: -1.22, y: -0.64, z: 3.4 },
-  { id: "h4", x: -1.08, y: -0.16, z: 3.38 },
+  { id: "c0", x: -1.55, y: 2.18, z: 1.55 },
+  { id: "c1", x: -0.78, y: 1.82, z: 1.62 },
+  { id: "c2", x: 0, y: 2.22, z: 1.52 },
+  { id: "c3", x: 0.78, y: 1.8, z: 1.6 },
+  { id: "c4", x: 1.55, y: 2.16, z: 1.55 },
+  { id: "b0", x: -1.05, y: -2.18, z: 1.58 },
+  { id: "b1", x: 0, y: -2.05, z: 1.52 },
+  { id: "b2", x: 1.05, y: -2.18, z: 1.58 },
+  ...hoshi,
 ];
 
 export const ASTER_FIGURES: AsterFigure[] = [
@@ -51,7 +62,7 @@ export const ASTER_FIGURES: AsterFigure[] = [
     id: "hoshi",
     name: "Hoshi",
     kicker: "The star",
-    nodeIds: ["h0", "h1", "h2", "h3", "h4"],
+    nodeIds: hoshi.map((n) => n.id),
     edges: [
       ["h0", "h1"],
       ["h1", "h2"],

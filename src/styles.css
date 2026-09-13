@@ -72,8 +72,8 @@ html.cursor-hide * {
 }
 
 html[data-tod="night"] {
-  --color-void: #070708;
-  --color-fog: #121214;
+  --color-void: #08070a;
+  --color-fog: #12110f;
 }
 html[data-tod="dusk"] {
   --color-void: #0c0b0a;
