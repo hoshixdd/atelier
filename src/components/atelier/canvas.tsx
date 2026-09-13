@@ -659,7 +659,7 @@ export function AtelierCanvas() {
     if (useBloom) {
       composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
-      bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.36, 0.42, 0.22);
+      bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.2, 0.26, 0.48);
       composer.addPass(bloomPass);
       composer.addPass(new OutputPass());
     }
@@ -1011,7 +1011,7 @@ export function AtelierCanvas() {
       if (world) rim.color.setHex(world.rim);
       else rim.color.setHex(0x7ec8e3);
       warm.intensity = 8 + pulse * 16;
-      if (bloomPass) bloomPass.strength = 0.32 + pulse * 0.5 + (state.novas > 0 ? 0.08 : 0);
+      if (bloomPass) bloomPass.strength = 0.18 + pulse * 0.16 + (state.novas > 0 ? 0.04 : 0);
 
       frames.forEach((g, i) => {
         const show = target.frameOp > 0.04;
