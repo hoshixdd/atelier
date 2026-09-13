@@ -24,7 +24,7 @@ export function AsterHud() {
         </>
       ) : (
         <p className="mt-2 text-[10px] leading-relaxed tracking-wide text-bone/70">
-          Join the bright stars around the belt. A name appears when a figure closes.
+          Join the bright stars. A name appears when a figure closes.
         </p>
       )}
     </div>
