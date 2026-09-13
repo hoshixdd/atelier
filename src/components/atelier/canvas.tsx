@@ -89,9 +89,11 @@ export function AtelierCanvas() {
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160);
     camera.position.set(0, 0, 0.9);
 
-    const ambient = new THREE.AmbientLight(0x6a7a99, 0.07);
+    const ambient = new THREE.AmbientLight(0x6a7a99, 0.022);
     scene.add(ambient);
-    const key = new THREE.DirectionalLight(0xffe8c8, 1.65);
+    const hemi = new THREE.HemisphereLight(0x1c283c, 0x040406, 0.16);
+    scene.add(hemi);
+    const key = new THREE.DirectionalLight(0xffe8c8, 0.42);
     key.position.set(2.4, 3.2, 5.2);
     key.castShadow = !isTouch;
     if (!isTouch) {
@@ -108,7 +110,7 @@ export function AtelierCanvas() {
     const rim = new THREE.PointLight(0x7ec8e3, 6, 9, 2);
     rim.position.set(0, 0, 0.2);
     scene.add(rim);
-    const sun = new THREE.PointLight(0xfff1d0, 48, 14, 1.05);
+    const sun = new THREE.PointLight(0xfff1d0, 92, 16, 1.25);
     sun.position.set(0, 0, 0);
     scene.add(sun);
     const warm = new THREE.PointLight(0xf0c36d, 5, 8, 2);
@@ -179,8 +181,56 @@ export function AtelierCanvas() {
       `,
     });
     const lens = new THREE.Mesh(new THREE.CircleGeometry(1.9, 72), lensMat);
-    nova.add(halo, remnant, core, lens);
+    const rayMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform float uTime;
+        void main() {
+          vec2 p = vUv * 2.0 - 1.0;
+          float a = atan(p.y, p.x);
+          float r = length(p);
+          float beams = pow(max(0.0, sin(a * 6.0 + uTime * 0.07)), 16.0);
+          beams += pow(max(0.0, sin(a * 3.5 - uTime * 0.045)), 22.0) * 0.55;
+          float fall = smoothstep(1.0, 0.1, r) * smoothstep(0.03, 0.16, r);
+          float dust = 0.62 + 0.38 * sin(r * 16.0 - uTime * 0.35);
+          vec3 col = mix(vec3(1.0, 0.84, 0.58), vec3(0.72, 0.86, 1.0), r);
+          gl_FragColor = vec4(col, beams * fall * dust * 0.2);
+        }
+      `,
+    });
+    const rays = new THREE.Mesh(new THREE.CircleGeometry(5.6, 80), rayMat);
+    rays.position.z = 0.1;
+    const raysSide = rays.clone();
+    raysSide.rotation.y = 0.72;
+    nova.add(halo, remnant, core, lens, rays, raysSide);
     scene.add(nova);
+
+    const dustCount = isTouch ? 160 : 380;
+    const dustPos = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const b = (Math.random() - 0.5) * Math.PI;
+      const rr = 0.55 + Math.random() * 2.7;
+      dustPos[i * 3] = Math.cos(a) * Math.cos(b) * rr;
+      dustPos[i * 3 + 1] = Math.sin(b) * rr * 0.5;
+      dustPos[i * 3 + 2] = Math.sin(a) * Math.cos(b) * rr * 0.72;
+    }
+    const dust = points(dustPos, 0.042, 0.62, starTex);
+    (dust.mesh.material as THREE.PointsMaterial).color.setHex(0xffe4c0);
+    (dust.mesh.material as THREE.PointsMaterial).opacity = 0.7;
+    scene.add(dust.mesh);
 
     loader.load("/cosmos/remnant.png", (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -270,8 +320,8 @@ export function AtelierCanvas() {
         bodyGeo,
         new THREE.MeshStandardMaterial({
           color: 0xffffff,
-          roughness: 0.52,
-          metalness: 0.06,
+          roughness: 0.72,
+          metalness: 0.04,
         }),
       );
       body.castShadow = !isTouch;
@@ -349,8 +399,8 @@ export function AtelierCanvas() {
       const geo = new THREE.SphereGeometry(d.radius, 32, 24);
       const mat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        roughness: 0.6,
-        metalness: 0.08,
+        roughness: 0.78,
+        metalness: 0.05,
       });
       const body = new THREE.Mesh(geo, mat);
       body.castShadow = !isTouch;
@@ -562,6 +612,25 @@ export function AtelierCanvas() {
       spr.scale.set(1.35, 0.26, 1);
       return spr;
     }
+    function markFound(fig: (typeof ASTER_FIGURES)[number], state: ReturnType<typeof useAtelier.getState>) {
+      if (state.asterFound.includes(fig.id)) return;
+      state.addAsterFound(fig.id);
+      fig.nodeIds.forEach((nid) => asterDone.add(nid));
+      const mid = figureCentroid(fig);
+      const label = nameSprite(fig.name);
+      if (label) {
+        label.position.set(mid.x, mid.y, mid.z);
+        scene.add(label);
+      }
+      state.setSlugline(`${fig.kicker.toUpperCase()} — ${fig.name.toUpperCase()}`);
+      window.setTimeout(() => {
+        if (useAtelier.getState().slugline?.includes(fig.name.toUpperCase())) {
+          useAtelier.getState().setSlugline(null);
+        }
+      }, 3200);
+      sound.letter();
+      pulse = Math.max(pulse, 0.7);
+    }
     function connectAster(id: string, state: ReturnType<typeof useAtelier.getState>) {
       if (asterPick === id) {
         asterPick = null;
@@ -582,26 +651,12 @@ export function AtelierCanvas() {
       for (const fig of ASTER_FIGURES) {
         if (state.asterFound.includes(fig.id)) continue;
         if (!figureComplete(fig, asterHave)) continue;
-        state.addAsterFound(fig.id);
-        fig.nodeIds.forEach((nid) => asterDone.add(nid));
-        const mid = figureCentroid(fig);
-        const label = nameSprite(fig.name);
-        if (label) {
-          label.position.set(mid.x, mid.y, mid.z);
-          scene.add(label);
-        }
-        state.setSlugline(`${fig.kicker.toUpperCase()} — ${fig.name.toUpperCase()}`);
-        window.setTimeout(() => {
-          if (useAtelier.getState().slugline?.includes(fig.name.toUpperCase())) {
-            useAtelier.getState().setSlugline(null);
-          }
-        }, 3200);
-        sound.letter();
-        pulse = Math.max(pulse, 0.7);
+        markFound(fig, state);
       }
     }
 
     let lastStrike = 0;
+    let hoshiQueued = false;
 
     let composer: EffectComposer | null = null;
     let bloomPass: UnrealBloomPass | null = null;
@@ -800,9 +855,13 @@ export function AtelierCanvas() {
         lastStrike = state.strikeN;
       }
       lensMat.uniforms.uTime.value = t;
+      rayMat.uniforms.uTime.value = t;
+      dust.mesh.rotation.y = t * 0.018 * motion;
+      dust.mesh.rotation.z = Math.sin(t * 0.11) * 0.05;
+      rays.rotation.z = t * 0.012 * motion;
 
-      const ambT = part === "night" ? 0.04 : part === "morning" ? 0.09 : part === "dusk" ? 0.07 : 0.085;
-      const keyT = part === "night" ? 0.95 : part === "morning" ? 1.55 : part === "dusk" ? 1.35 : 1.7;
+      const ambT = part === "night" ? 0.016 : part === "morning" ? 0.03 : part === "dusk" ? 0.024 : 0.028;
+      const keyT = part === "night" ? 0.22 : part === "morning" ? 0.48 : part === "dusk" ? 0.36 : 0.42;
       ambient.intensity += (ambT - ambient.intensity) * 0.04;
       key.intensity += (keyT - key.intensity) * 0.04;
       key.color.setHex(part === "night" ? 0x8aa6cc : part === "morning" ? 0xffd4a8 : part === "dusk" ? 0xffb078 : 0xffe8c8);
@@ -815,6 +874,28 @@ export function AtelierCanvas() {
           ? 1
           : Math.min(1, (performance.now() - introT0) / 5200);
       const introEase = 1 - Math.pow(1 - introK, 3);
+
+      if (!hoshiQueued && state.entered && !state.introPlaying) {
+        hoshiQueued = true;
+        const fig = ASTER_FIGURES.find((f) => f.id === "hoshi");
+        if (fig && !state.asterFound.includes("hoshi")) {
+          if (reduced || state.reducedMotion) {
+            fig.edges.forEach(([a, b]) => asterHave.add(edgeKey(a, b)));
+            rebuildAsterLines();
+            markFound(fig, state);
+          } else {
+            fig.edges.forEach(([a, b], i) => {
+              window.setTimeout(() => {
+                asterHave.add(edgeKey(a, b));
+                rebuildAsterLines();
+                sound.hover();
+                pulse = Math.max(pulse, 0.22);
+                if (i === fig.edges.length - 1) markFound(fig, useAtelier.getState());
+              }, 480 + i * 340);
+            });
+          }
+        }
+      }
 
       if (playing) {
         fov.v += (50 - fov.v) * 0.05;
@@ -1083,6 +1164,10 @@ export function AtelierCanvas() {
       bindCapture(null);
       lensMat.dispose();
       lens.geometry.dispose();
+      rayMat.dispose();
+      rays.geometry.dispose();
+      dust.geo.dispose();
+      (dust.mesh.material as THREE.Material).dispose();
       asterLineGeo.dispose();
       asterHits.forEach((m) => {
         m.geometry.dispose();
@@ -1140,7 +1225,7 @@ export function AtelierCanvas() {
   }, []);
 
   return (
-    <div ref={wrapRef} className="pointer-events-none fixed inset-0 z-0">
+    <div ref={wrapRef} className="atelier-sky pointer-events-none fixed inset-0 z-0">
       <canvas
         ref={canvasRef}
         className={cn(

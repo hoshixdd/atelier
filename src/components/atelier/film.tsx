@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAtelier } from "@/store/atelier";
 
+export function FilmGate() {
+  const intro = useAtelier((s) => s.introPlaying);
+  if (!intro) return null;
+  return <div className="film-gate" aria-hidden="true" />;
+}
+
 export function Letterbox() {
   const entered = useAtelier((s) => s.entered);
   const on = useAtelier((s) => s.letterboxOn);

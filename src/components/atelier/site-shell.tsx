@@ -17,7 +17,7 @@ import { Presence } from "./presence";
 import { WorldLabels } from "./world-labels";
 import { SecretLetter } from "./secret-letter";
 import { Atmosphere } from "./atmosphere";
-import { FlyShot, Letterbox, Slugline } from "./film";
+import { FlyShot, FilmGate, Letterbox, Slugline } from "./film";
 import { PlanetCard } from "./planet-card";
 import { DirectorHud } from "./director-hud";
 import { Keys } from "./keys";
@@ -34,6 +34,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const entered = useAtelier((s) => s.entered);
   const pendingSlug = useAtelier((s) => s.pendingSlug);
   const notice = useAtelier((s) => s.notice);
+  const intro = useAtelier((s) => s.introPlaying);
 
   useEffect(() => {
     loadDesk();
@@ -53,6 +54,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.dataset.tod = dayPart(hour);
   }, [hour]);
+
+  useEffect(() => {
+    if (intro) document.documentElement.dataset.intro = "";
+    else delete document.documentElement.dataset.intro;
+  }, [intro]);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -120,6 +126,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <span className="hud-corner br hidden md:block" />
       <PageTransition />
       <Letterbox />
+      <FilmGate />
       <Slugline />
       <DirectorHud />
       <Keys />

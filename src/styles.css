@@ -318,6 +318,47 @@ input[type="range"] {
   }
 }
 
+.film-gate {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  mix-blend-mode: screen;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 50, 40, 0.16),
+      transparent 16%,
+      transparent 84%,
+      rgba(40, 80, 255, 0.14)
+    );
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.45);
+  animation: gate-run 5.2s cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes gate-run {
+  0% { opacity: 0.92; }
+  6% { opacity: 0.28; }
+  10% { opacity: 0.75; }
+  14% { opacity: 0.22; }
+  20% { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+html[data-intro] .atelier-sky {
+  animation: gate-weave 5.2s cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes gate-weave {
+  0% { transform: translate(0.7px, -0.5px) scale(1.012); filter: contrast(1.18) saturate(1.12); }
+  7% { transform: translate(-0.5px, 0.35px) scale(1.004); }
+  12% { transform: translate(0.3px, 0.2px); filter: contrast(1.08); }
+  100% { transform: none; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .film-gate,
+  html[data-intro] .atelier-sky {
+    animation: none !important;
+  }
+}
+
 .credits-mask {
   mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
 }
